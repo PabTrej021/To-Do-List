@@ -1,7 +1,6 @@
--- Si ya existe y quieres reemplazarla perdiendo todos los datos (opción más fácil):
 DROP TABLE IF EXISTS tasks CASCADE;
 
--- Y volvemos a crear de cero con la configuración correcta
+-- Y volvemos a crear de cero con la configuración correcta, ahora incluyendo due_date
 CREATE TABLE tasks (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   title TEXT NOT NULL,
@@ -9,7 +8,8 @@ CREATE TABLE tasks (
   completed BOOLEAN DEFAULT false,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   order_index INTEGER DEFAULT 0,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  due_date TIMESTAMP WITH TIME ZONE NULL
 );
 
 -- Row Level Security
