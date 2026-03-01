@@ -1,4 +1,7 @@
--- Create the tasks table
+-- Si ya existe y quieres reemplazarla perdiendo todos los datos (opción más fácil):
+DROP TABLE IF EXISTS tasks CASCADE;
+
+-- Y volvemos a crear de cero con la configuración correcta
 CREATE TABLE tasks (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   title TEXT NOT NULL,
@@ -9,28 +12,14 @@ CREATE TABLE tasks (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Turn on Row Level Security
+-- Row Level Security
 ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
 
--- Policy: Users can only select their own tasks
-CREATE POLICY "Users can view their own tasks" 
-  ON tasks FOR SELECT 
-  USING (auth.uid() = user_id);
+-- Políticas
+CREATE POLICY "Users can view their own tasks" ON tasks FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert their own tasks" ON tasks FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update their own tasks" ON tasks FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete their own tasks" ON tasks FOR DELETE USING (auth.uid() = user_id);
 
--- Policy: Users can only insert their own tasks
-CREATE POLICY "Users can insert their own tasks" 
-  ON tasks FOR INSERT 
-  WITH CHECK (auth.uid() = user_id);
-
--- Policy: Users can only update their own tasks
-CREATE POLICY "Users can update their own tasks" 
-  ON tasks FOR UPDATE 
-  USING (auth.uid() = user_id);
-
--- Policy: Users can only delete their own tasks
-CREATE POLICY "Users can delete their own tasks" 
-  ON tasks FOR DELETE 
-  USING (auth.uid() = user_id);
-
--- Enable Realtime for the tasks table
+-- Habilitar Realtime
 ALTER PUBLICATION supabase_realtime ADD TABLE tasks;
