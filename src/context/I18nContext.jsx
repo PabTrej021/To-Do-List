@@ -39,7 +39,9 @@ const translations = {
         health: "Salud",
         work: "Trabajo",
         home: "Hogar",
-        other: "Otro"
+        other: "Otro",
+        taskSingular: "1 Tarea",
+        taskPlural: "Tareas"
     },
     en: {
         hello: "Hello",
@@ -78,7 +80,9 @@ const translations = {
         health: "Health",
         work: "Work",
         home: "Home",
-        other: "Other"
+        other: "Other",
+        taskSingular: "1 Task",
+        taskPlural: "Tasks"
     },
     fr: {
         hello: "Bonjour",
@@ -117,7 +121,9 @@ const translations = {
         health: "Santé",
         work: "Travail",
         home: "Maison",
-        other: "Autre"
+        other: "Autre",
+        taskSingular: "1 Tâche",
+        taskPlural: "Tâches"
     },
     de: {
         hello: "Hallo",
@@ -156,7 +162,9 @@ const translations = {
         health: "Gesundheit",
         work: "Arbeit",
         home: "Zuhause",
-        other: "Andere"
+        other: "Andere",
+        taskSingular: "1 Aufgabe",
+        taskPlural: "Aufgaben"
     }
 };
 

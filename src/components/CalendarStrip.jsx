@@ -1,59 +1,61 @@
 import React, { useState, useEffect } from 'react';
+import { useI18n } from '../context/I18nContext';
 
 // Genera los días consecutivos desde hoy
-const generateDays = (numDays = 14) => {
-    const days = [];
-    const today = new Date();
+const generateDays = (numDays = 14, locale = 'es') => {
+  const days = [];
+  const today = new Date();
 
-    for (let i = 0; i < numDays; i++) {
-        const d = new Date(today);
-        d.setDate(today.getDate() + i);
-        days.push({
-            date: d,
-            dayNumber: d.getDate(),
-            dayName: d.toLocaleDateString('en-US', { weekday: 'short' }), // ej: 'Mon', 'Tue'
-            isToday: i === 0,
-            fullDateStr: d.toDateString()
-        });
-    }
-    return days;
+  for (let i = 0; i < numDays; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    days.push({
+      date: d,
+      dayNumber: d.getDate(),
+      dayName: d.toLocaleDateString(locale, { weekday: 'short' }), // Dinámico según idioma
+      isToday: i === 0,
+      fullDateStr: d.toDateString()
+    });
+  }
+  return days;
 };
 
 export default function CalendarStrip({ onSelectDate }) {
-    const [days, setDays] = useState([]);
-    const [activeDateStr, setActiveDateStr] = useState('');
+  const { lang } = useI18n();
+  const [days, setDays] = useState([]);
+  const [activeDateStr, setActiveDateStr] = useState('');
 
-    useEffect(() => {
-        const generated = generateDays(14);
-        setDays(generated);
-        setActiveDateStr(generated[0].fullDateStr);
-    }, []);
+  useEffect(() => {
+    const generated = generateDays(14, lang);
+    setDays(generated);
+    setActiveDateStr(generated[0].fullDateStr);
+  }, [lang]); // Rehacer si cambia el idioma
 
-    const handleSelect = (day) => {
-        setActiveDateStr(day.fullDateStr);
-        onSelectDate(day.date);
-    };
+  const handleSelect = (day) => {
+    setActiveDateStr(day.fullDateStr);
+    onSelectDate(day.date);
+  };
 
-    return (
-        <div className="calendar-section">
-            <div className="horizontal-scroll" style={{ paddingBottom: '0.5rem' }}>
-                {days.map((day, idx) => {
-                    const isActive = day.fullDateStr === activeDateStr;
-                    return (
-                        <div
-                            key={idx}
-                            onClick={() => handleSelect(day)}
-                            className={`scroll-item calendar-card ${isActive ? 'active' : ''}`}
-                        >
-                            <span className="cal-day-name">{day.dayName}</span>
-                            <span className="cal-day-num">{day.dayNumber}</span>
-                            {day.isToday && <div className="cal-today-dot"></div>}
-                        </div>
-                    );
-                })}
+  return (
+    <div className="calendar-section">
+      <div className="horizontal-scroll" style={{ padding: '10px 5px 0.5rem 5px' }}>
+        {days.map((day, idx) => {
+          const isActive = day.fullDateStr === activeDateStr;
+          return (
+            <div
+              key={idx}
+              onClick={() => handleSelect(day)}
+              className={`scroll-item calendar-card ${isActive ? 'active' : ''}`}
+            >
+              <span className="cal-day-name">{day.dayName}</span>
+              <span className="cal-day-num">{day.dayNumber}</span>
+              {day.isToday && <div className="cal-today-dot"></div>}
             </div>
+          );
+        })}
+      </div>
 
-            <style>{`
+      <style>{`
         .calendar-section {
           margin-bottom: 2rem;
         }
@@ -93,6 +95,7 @@ export default function CalendarStrip({ onSelectDate }) {
           font-weight: 500;
           opacity: 0.7;
           margin-bottom: 0.25rem;
+          text-transform: capitalize;
         }
 
         .calendar-card.active .cal-day-name {
@@ -117,6 +120,6 @@ export default function CalendarStrip({ onSelectDate }) {
           background-color: white;
         }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 }
