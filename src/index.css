@@ -522,3 +522,100 @@ input {
   color: var(--text-primary);
   background-color: var(--bg-color-secondary);
 }
+
+/* ========================================= */
+/* MOBILE BOTTOM SHEETS & RESPONSIVENESS     */
+/* ========================================= */
+.mobile-handle {
+  display: none;
+  width: 40px;
+  height: 5px;
+  background-color: var(--glass-border);
+  border-radius: 10px;
+  margin: 0 auto 1.5rem auto;
+}
+
+@media (max-width: 768px) {
+
+  /* Reduce side margins/paddings */
+  .app-container {
+    padding: 1.5rem 0.75rem;
+    padding-bottom: 6rem;
+  }
+
+  .glass-panel {
+    padding: 1rem;
+  }
+
+  /* Bottom Sheets for Modals */
+  .modal-overlay {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+
+  .modal-content {
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    padding-bottom: 2.5rem !important;
+    /* Extra padding for bottom home indicator on iPhones */
+    animation: slideUpBottomSheet 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+  }
+
+  .mobile-handle {
+    display: block;
+    /* Show handle only on mobile devices */
+  }
+
+  .close-btn {
+    top: 1rem;
+    right: 1rem;
+  }
+}
+
+@keyframes slideUpBottomSheet {
+  from {
+    transform: translateY(100%);
+    opacity: 0.8;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Modal Shared Helpers for Bottom Sheets cross component */
+.close-btn {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+  padding: 0.25rem;
+}
+
+.close-btn:hover {
+  color: var(--text-primary);
+}
+
+.btn-secondary {
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-secondary:hover {
+  opacity: 0.8;
+  transform: translateY(-1px);
+}
+
+.btn-danger-text {
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-danger-text:hover {
+  opacity: 0.8;
+}

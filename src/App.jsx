@@ -192,6 +192,7 @@ function AppContent() {
         <>
           <Header
             userName={userName}
+            session={session}
             handleSignOut={() => supabase.auth.signOut()}
             toggleTheme={toggleTheme}
             darkMode={darkMode}

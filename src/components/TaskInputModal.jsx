@@ -4,86 +4,87 @@ import { useI18n } from '../context/I18nContext';
 const PlusIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="M12 5v14" /></svg>;
 
 const CATEGORIES = [
-    { id: 'health', color: 'var(--tag-health)' },
-    { id: 'work', color: 'var(--tag-work)' },
-    { id: 'study', color: 'var(--tag-study)' },
-    { id: 'home', color: 'var(--tag-home)' },
-    { id: 'other', color: 'var(--text-secondary)' }
+  { id: 'health', color: 'var(--tag-health)' },
+  { id: 'work', color: 'var(--tag-work)' },
+  { id: 'study', color: 'var(--tag-study)' },
+  { id: 'home', color: 'var(--tag-home)' },
+  { id: 'other', color: 'var(--text-secondary)' }
 ];
 
 export default function TaskInputModal({ onAdd, onCancel }) {
-    const { t } = useI18n();
-    const [title, setTitle] = useState('');
-    const [category, setCategory] = useState('other');
-    const [dueDate, setDueDate] = useState('');
+  const { t } = useI18n();
+  const [title, setTitle] = useState('');
+  const [category, setCategory] = useState('other');
+  const [dueDate, setDueDate] = useState('');
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        if (title.trim()) {
-            onAdd(title.trim(), category, dueDate);
-            setTitle('');
-        }
-    };
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (title.trim()) {
+      onAdd(title.trim(), category, dueDate);
+      setTitle('');
+    }
+  };
 
-    return (
-        <div className="modal-overlay">
-            <div className="modal-content glass-panel">
-                <h3 className="modal-title">{t('newTask')}</h3>
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content glass-panel">
+        <div className="mobile-handle"></div>
+        <h3 className="modal-title">{t('newTask')}</h3>
 
-                <form onSubmit={handleSubmit} className="task-form">
-                    <input
-                        type="text"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        placeholder={t('whatNext')}
-                        className="clean-input input-large"
-                        autoFocus
-                    />
+        <form onSubmit={handleSubmit} className="task-form">
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder={t('whatNext')}
+            className="clean-input input-large"
+            autoFocus
+          />
 
-                    <div className="input-group">
-                        <label>{t('dateOptional')}</label>
-                        <input
-                            type="datetime-local"
-                            value={dueDate}
-                            onChange={(e) => setDueDate(e.target.value)}
-                            className="datetime-input"
-                        />
-                    </div>
+          <div className="input-group">
+            <label>{t('dateOptional')}</label>
+            <input
+              type="datetime-local"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="datetime-input"
+            />
+          </div>
 
-                    <div className="category-scroll">
-                        {CATEGORIES.map(cat => (
-                            <button
-                                key={cat.id}
-                                type="button"
-                                className={`cat-btn ${category === cat.id ? 'active' : ''}`}
-                                onClick={() => setCategory(cat.id)}
-                                style={{
-                                    borderColor: category === cat.id ? cat.color : 'transparent',
-                                    color: category === cat.id ? cat.color : 'var(--text-secondary)'
-                                }}
-                            >
-                                <div className="cat-dot" style={{ backgroundColor: cat.color }}></div>
-                                {t(cat.id)}
-                            </button>
-                        ))}
-                    </div>
+          <div className="category-scroll">
+            {CATEGORIES.map(cat => (
+              <button
+                key={cat.id}
+                type="button"
+                className={`cat-btn ${category === cat.id ? 'active' : ''}`}
+                onClick={() => setCategory(cat.id)}
+                style={{
+                  borderColor: category === cat.id ? cat.color : 'transparent',
+                  color: category === cat.id ? cat.color : 'var(--text-secondary)'
+                }}
+              >
+                <div className="cat-dot" style={{ backgroundColor: cat.color }}></div>
+                {t(cat.id)}
+              </button>
+            ))}
+          </div>
 
-                    <div className="modal-actions">
-                        <button type="button" className="btn-cancel" onClick={onCancel}>
-                            {t('cancel')}
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={!title.trim()}
-                            className="btn-add"
-                        >
-                            {t('add')} <PlusIcon />
-                        </button>
-                    </div>
-                </form>
-            </div>
+          <div className="modal-actions">
+            <button type="button" className="btn-cancel" onClick={onCancel}>
+              {t('cancel')}
+            </button>
+            <button
+              type="submit"
+              disabled={!title.trim()}
+              className="btn-add"
+            >
+              {t('add')} <PlusIcon />
+            </button>
+          </div>
+        </form>
+      </div>
 
-            <style>{`
+      <style>{`
         .modal-overlay {
           position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
           background-color: rgba(0,0,0,0.6);
@@ -181,6 +182,6 @@ export default function TaskInputModal({ onAdd, onCancel }) {
         }
         .btn-add:disabled { opacity: 0.5; box-shadow: none; cursor: not-allowed; }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 }
