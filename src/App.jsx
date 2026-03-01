@@ -76,14 +76,46 @@ function AppContent() {
       else setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
-      if (session) { initGamification(session.user.id); fetchTasks(session.user.id); }
-      else { setTasks([]); setXp(0); setStreak(0); }
+      if (event === 'SIGNED_IN' && session) {
+        initGamification(session.user.id);
+        fetchTasks(session.user.id);
+      } else if (event === 'SIGNED_OUT') {
+        setTasks([]);
+        setXp(0);
+        setStreak(0);
+      }
+      // Si el evento es USER_UPDATED (ej: cambio de Profile Settings), React re-evalua setSession y actualiza el Header solo.
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Sincronización Real-time (Cross-Device)
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    const channel = supabase.channel('public:tasks')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tasks', filter: `user_id=eq.${session.user.id}` }, payload => {
+        setTasks(prev => {
+          // Evita duplicados por el "Optimistic UI" si el item ya se renderizó localmente antes de llegar al servidor.
+          if (prev.some(t => t.id === payload.new.id)) return prev;
+          return [payload.new, ...prev].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        });
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tasks', filter: `user_id=eq.${session.user.id}` }, payload => {
+        setTasks(prev => prev.map(t => (t.id === payload.new.id ? payload.new : t)));
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'tasks', filter: `user_id=eq.${session.user.id}` }, payload => {
+        setTasks(prev => prev.filter(t => t.id !== payload.old.id));
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [session?.user?.id]);
 
   const initGamification = (userId) => {
     const profile = getLocalProfile(userId);
