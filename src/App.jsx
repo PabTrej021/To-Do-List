@@ -2,16 +2,20 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from './lib/supabase';
 import Login from './components/Login';
 import Register from './components/Register';
-import Dashboard from './components/Dashboard';
 import TaskList from './components/TaskList';
 import TaskInput from './components/TaskInput';
+import CategoryCarousel from './components/CategoryCarousel';
+import CalendarStrip from './components/CalendarStrip';
+import StatCharts from './components/StatCharts';
 
-// Inline Icons
-const SunIcon = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4" /><path d="M12 2v2" /><path d="M12 20v2" /><path d="m4.93 4.93 1.41 1.41" /><path d="m17.66 17.66 1.41 1.41" /><path d="M2 12h2" /><path d="M20 12h2" /><path d="m6.34 17.66-1.41 1.41" /><path d="m19.07 4.93-1.41 1.41" /></svg>;
-const MoonIcon = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" /></svg>;
-const LogOutIcon = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" x2="9" y1="12" y2="12" /></svg>;
+// Icons
+const BellIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></svg>;
+const SearchIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>;
+const PlusIcon = () => <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="M12 5v14" /></svg>;
+const HomeIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>;
+const BarChartIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20V10" /><path d="M18 20V4" /><path d="M6 20v-4" /></svg>;
 
-// Helpers LocalStorage for Gamification Extrapolation
+// Profile helpers (Local)
 function getLocalProfile(userId) {
   const json = localStorage.getItem(`profile_${userId}`);
   return json ? JSON.parse(json) : { xp: 0, streak: 0, lastLogin: new Date().toDateString() };
@@ -25,205 +29,121 @@ export default function App() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Theme & UI State
-  const [darkMode, setDarkMode] = useState(false);
+  // App UI State
   const [toast, setToast] = useState({ visible: false, title: '', message: '' });
   const [isRegistering, setIsRegistering] = useState(false);
-  const [activeFilter, setActiveFilter] = useState('Todas');
-  const [showConfetti, setShowConfetti] = useState(false);
+  const [currentView, setCurrentView] = useState('home'); // 'home' | 'stats'
+  const [showTaskModal, setShowTaskModal] = useState(false);
 
-  // Gamification State
+  // Dashboard Filters
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState('All');
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
+  // Gamification
   const [xp, setXp] = useState(0);
   const [streak, setStreak] = useState(0);
 
-  // Toast System
   const showToast = useCallback((title, message) => {
     setToast({ visible: true, title, message });
     if (window.navigator?.vibrate) window.navigator.vibrate(20);
     setTimeout(() => setToast(prev => ({ ...prev, visible: false })), 3500);
   }, []);
 
-  // Check Local Auth & Preferences
+  // Sync / Auth
   useEffect(() => {
-    const initSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (session) {
-        initGamification(session.user.id);
-        fetchTasks(session.user.id);
-      } else {
-        setLoading(false);
-      }
-    };
-    initSession();
+      if (session) { initGamification(session.user.id); fetchTasks(session.user.id); }
+      else setLoading(false);
+    });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (session) {
-        initGamification(session.user.id);
-        fetchTasks(session.user.id);
-      } else {
-        setTasks([]);
-        setXp(0);
-        setStreak(0);
-      }
+      if (session) { initGamification(session.user.id); fetchTasks(session.user.id); }
+      else { setTasks([]); setXp(0); setStreak(0); }
     });
-
     return () => subscription.unsubscribe();
   }, []);
 
   const initGamification = (userId) => {
     const profile = getLocalProfile(userId);
     const today = new Date().toDateString();
-
-    // Increment streak if last interaction was yesterday, reset if older
     if (profile.lastLogin !== today) {
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
       if (profile.lastLogin === yesterday.toDateString()) {
-        profile.streak += 1;
-        showToast('¡Racha Mantenida!', `Día ${profile.streak} 🔥`);
-      } else {
-        profile.streak = 1; // Start new streak
-      }
+        profile.streak += 1; showToast('¡Racha Mantenida!', `Día ${profile.streak} 🔥`);
+      } else profile.streak = 1;
       profile.lastLogin = today;
       saveLocalProfile(userId, profile);
     }
-
-    setXp(profile.xp);
-    setStreak(profile.streak);
+    setXp(profile.xp); setStreak(profile.streak);
   };
 
   const addXp = (amount) => {
     if (!session) return;
-    const oldLevel = Math.floor(xp / 100) + 1;
-    const newXp = xp + amount;
-    const newLevel = Math.floor(newXp / 100) + 1;
-
-    setXp(newXp);
-
-    const profile = getLocalProfile(session.user.id);
-    saveLocalProfile(session.user.id, { ...profile, xp: newXp });
-
-    if (newLevel > oldLevel) {
-      triggerLevelUp();
-    }
+    const newXp = xp + amount; setXp(newXp);
+    saveLocalProfile(session.user.id, { ...getLocalProfile(session.user.id), xp: newXp });
   };
 
-  const triggerLevelUp = () => {
-    setShowConfetti(true);
-    showToast('¡Nivel Aumentado!', 'Ganaste más XP y progresaste enormemente.');
-    if (window.navigator?.vibrate) window.navigator.vibrate([100, 50, 100, 50, 100]);
-    setTimeout(() => setShowConfetti(false), 5000);
-  };
-
-  // Theme Management
-  useEffect(() => {
-    const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    setDarkMode(isDark);
-    if (isDark) document.documentElement.classList.add('dark-mode');
-  }, []);
-
-  const toggleTheme = () => {
-    setDarkMode(!darkMode);
-    document.documentElement.classList.toggle('dark-mode');
-  };
-
-  // DB Fetch
   const fetchTasks = async (userId) => {
     setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-      if (error && error.code !== '42P01') throw error;
-      setTasks(data || []);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+    const { data, error } = await supabase.from('tasks').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+    if (!error) setTasks(data || []);
+    setLoading(false);
   };
-
-  // Real-time
-  useEffect(() => {
-    if (!session?.user) return;
-    const channel = supabase.channel('tasks_app')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${session.user.id}` },
-        (payload) => {
-          if (payload.eventType === 'INSERT') setTasks(prev => [payload.new, ...prev.filter(t => t.id !== payload.new.id)]);
-          if (payload.eventType === 'UPDATE') setTasks(prev => prev.map(t => t.id === payload.new.id ? payload.new : t));
-          if (payload.eventType === 'DELETE') setTasks(prev => prev.filter(t => t.id !== payload.old.id));
-        })
-      .subscribe();
-    return () => supabase.removeChannel(channel);
-  }, [session]);
-
-  const handleSignOut = () => supabase.auth.signOut();
 
   // Handlers
   const handleAddTask = async (title, category) => {
     const newTask = {
-      id: crypto.randomUUID(),
-      title,
-      description: `Categoria: ${category}`, // Saving cat in description since we didn't alter db schema
-      completed: false,
-      user_id: session?.user?.id,
-      created_at: new Date().toISOString()
+      id: crypto.randomUUID(), title,
+      description: `Categoria: ${category}`,
+      priority: title.length > 20 ? 'high' : 'medium', // Mock UI data
+      progress: 0,
+      completed: false, user_id: session?.user?.id, created_at: new Date().toISOString()
     };
-
-    // Store temporarily in 'category' field for client render
     newTask.category = category;
 
     setTasks(prev => [newTask, ...prev]);
     showToast('Añadida', 'Nueva tarea creada exitosamente.');
+    setShowTaskModal(false);
 
-    if (session) {
-      const { error } = await supabase.from('tasks').insert([{
-        id: newTask.id, title, description: category, user_id: newTask.user_id
-      }]);
-      if (error && error.code !== '42P01') showToast('Error', 'No se pudo sincronizar');
-    }
+    if (session) await supabase.from('tasks').insert([{ id: newTask.id, title, description: category, user_id: newTask.user_id }]);
   };
 
   const handleToggleTask = async (id, currentCompleted) => {
     setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: !currentCompleted } : t));
-    showToast(!currentCompleted ? '¡Excelente!' : 'Deshecha', !currentCompleted ? 'Has completado una tarea.' : 'Marcada como pendiente.');
-
-    if (!currentCompleted) addXp(25); // +25 XP per task completed
-
-    if (session) {
-      const { error } = await supabase.from('tasks').update({ completed: !currentCompleted }).eq('id', id);
-      if (error && error.code !== '42P01') console.error(error);
-    }
+    if (!currentCompleted) addXp(25);
+    if (session) await supabase.from('tasks').update({ completed: !currentCompleted }).eq('id', id);
   };
 
   const handleDeleteTask = async (id) => {
     setTasks(prev => prev.filter(t => t.id !== id));
-    showToast('Eliminada', 'Tarea limpiada de la lista.');
-    if (session) supabase.from('tasks').delete().eq('id', id);
+    if (session) await supabase.from('tasks').delete().eq('id', id);
   };
 
-  // Filter Logic
+  // Extract real Category from DB payload
+  const mappedTasks = useMemo(() => tasks.map(t => ({
+    ...t,
+    category: t.category || (t.description?.includes('Categoria:') ? t.description.split(': ')[1] : 'other')
+  })), [tasks]);
+
   const filteredTasks = useMemo(() => {
-    let filtered = tasks;
-    // Map categories back from description if they exist (hack for db compat without altering schema)
-    filtered = filtered.map(t => ({ ...t, category: t.category || (t.description?.includes('Categoria:') ? t.description.split(': ')[1] : 'other') }));
+    let list = mappedTasks;
+    // Tab filtering
+    if (activeTab === 'Personal') list = list.filter(t => t.category === 'home' || t.category === 'health');
+    if (activeTab === 'Study') list = list.filter(t => t.category === 'study');
+    if (activeTab === 'Important') list = list.filter(t => !t.completed && (t.priority === 'high' || t.title.length > 20));
+    // Search
+    if (searchQuery) list = list.filter(t => t.title.toLowerCase().includes(searchQuery.toLowerCase()));
 
-    if (activeFilter === 'Pendientes') return filtered.filter(t => !t.completed);
-    if (activeFilter === 'Completadas') return filtered.filter(t => t.completed);
-    return filtered;
-  }, [tasks, activeFilter]);
+    return list;
+  }, [mappedTasks, activeTab, searchQuery]);
 
-
-  // Rendering
   if (loading && !session) return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Cargando Aurora...</div>;
 
   return (
     <div className="app-container">
-
       {/* Toast Alert */}
       {toast.visible && (
         <div className="dynamic-island-container">
@@ -233,57 +153,115 @@ export default function App() {
         </div>
       )}
 
-      {/* Confetti Animation (CSS fallback built in Dashboard? No, let's inject simple floating colored divs) */}
-      {showConfetti && (
-        <div className="confetti-overlay">
-          {[...Array(30)].map((_, i) => (
-            <div key={i} style={{
-              position: 'absolute',
-              top: '-10px',
-              left: Math.random() * 100 + 'vw',
-              width: '10px', height: '10px',
-              backgroundColor: ['#ff2a5f', '#ff9500', '#5e5ce6', '#34c759'][Math.floor(Math.random() * 4)],
-              borderRadius: Math.random() > 0.5 ? '50%' : '2px',
-              animation: `fall ${Math.random() * 3 + 2}s linear forwards`
-            }} />
-          ))}
-        </div>
-      )}
-
-      {/* Header */}
-      <header className="app-header glass-panel" style={{ padding: '0.75rem 1.5rem', marginBottom: '1.5rem', borderRadius: '40px' }}>
-        <h1 className="text-title" style={{ margin: 0, fontSize: '1.4rem' }}>Aurora Plan</h1>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button onClick={toggleTheme} className="theme-toggle-btn" aria-label="Cambiar tema">{darkMode ? <SunIcon /> : <MoonIcon />}</button>
-          {session && <button onClick={handleSignOut} className="theme-toggle-btn" style={{ color: 'var(--danger-color)' }}><LogOutIcon /></button>}
-        </div>
-      </header>
-
-      {/* Auth Gates */}
       {!session ? (
         isRegistering
           ? <Register onToast={showToast} onSwitchToLogin={() => setIsRegistering(false)} />
           : <Login onToast={showToast} onSwitchToRegister={() => setIsRegistering(true)} />
       ) : (
-        <main>
-          <Dashboard
-            tasks={tasks}
-            xp={xp} level={Math.floor(xp / 100) + 1} streak={streak}
-            activeFilter={activeFilter} onFilterChange={setActiveFilter}
-          />
-          <TaskInput onAdd={handleAddTask} />
-          <TaskList
-            tasks={filteredTasks}
-            onToggle={handleToggleTask}
-            onDelete={handleDeleteTask}
-          />
-        </main>
+        <>
+          {/* Top Bar Navigation */}
+          <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <div>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '0.2rem' }}>Hello, {session.user.email.split('@')[0]}</p>
+              <h1 className="text-title" style={{ margin: 0, fontSize: '1.6rem' }}>Tus Tareas</h1>
+            </div>
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+              <button style={{ color: 'var(--text-primary)', position: 'relative' }}>
+                <BellIcon />
+                <span style={{ position: 'absolute', top: '2px', right: '3px', width: '8px', height: '8px', backgroundColor: 'var(--accent-color)', borderRadius: '50%' }}></span>
+              </button>
+              {/* Mock Avatar */}
+              <div style={{ width: '45px', height: '45px', borderRadius: '50%', background: 'linear-gradient(135deg, #5e5ce6, #bf5af2)', boxShadow: 'vvar(--shadow-sm)', cursor: 'pointer' }} onClick={() => supabase.auth.signOut()} title="Cerrar sesión"></div>
+            </div>
+          </header>
+
+          <main style={{ paddingBottom: '5rem' }}>
+            {currentView === 'home' ? (
+              <>
+                {/* Search Bar */}
+                <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
+                  <div style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }}><SearchIcon /></div>
+                  <input
+                    type="text"
+                    placeholder="Search tasks..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="input-field"
+                    style={{ paddingLeft: '3rem', borderRadius: '30px' }}
+                  />
+                </div>
+
+                {/* Horizontal Category Carousel */}
+                <CategoryCarousel tasks={mappedTasks} onAddCategoryTask={(catId) => { setShowTaskModal(true); }} />
+
+                {/* Horizontal Filter Pills */}
+                <div className="horizontal-scroll" style={{ paddingBottom: '0.25rem', marginBottom: '1.5rem' }}>
+                  {['All', 'Personal', 'Study', 'Important'].map(tab => (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className={`scroll-item ${activeTab === tab ? 'pill-active' : 'pill-inactive'}`}
+                      style={{ padding: '0.6rem 1.25rem', borderRadius: '30px', marginRight: '0.75rem', fontWeight: 600, fontSize: '0.9rem', transition: 'all var(--transition-fast)' }}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Calendar Strip */}
+                <CalendarStrip onSelectDate={(date) => setSelectedDate(date)} />
+
+                {/* Today's Tasks */}
+                <h3 className="text-title" style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>Today's Tasks</h3>
+                <TaskList
+                  tasks={filteredTasks}
+                  onToggle={handleToggleTask}
+                  onDelete={handleDeleteTask}
+                />
+              </>
+            ) : (
+              <StatCharts tasks={mappedTasks} />
+            )}
+          </main>
+
+          {/* Floating Action Button (FAB) */}
+          <div className="fab-container">
+            <button className="fab-button" onClick={() => setShowTaskModal(true)}>
+              <PlusIcon />
+            </button>
+          </div>
+
+          {/* Bottom Navigation Bar */}
+          <div style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: '800px', padding: '1rem', zIndex: 90 }}>
+            <div className="glass-panel" style={{ display: 'flex', justifyContent: 'space-around', padding: '0.75rem', borderRadius: '30px' }}>
+              <button onClick={() => setCurrentView('home')} style={{ color: currentView === 'home' ? 'var(--accent-color)' : 'var(--text-secondary)' }}>
+                <HomeIcon />
+              </button>
+              <button onClick={() => setCurrentView('stats')} style={{ color: currentView === 'stats' ? 'var(--accent-color)' : 'var(--text-secondary)' }}>
+                <BarChartIcon />
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Add Modal */}
+          {showTaskModal && (
+            <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: '90%', maxWidth: '500px', backgroundColor: 'var(--bg-color)', borderRadius: 'var(--border-radius-lg)', padding: '2rem', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }}>
+                <h3 style={{ marginBottom: '1.5rem', fontSize: '1.4rem' }}>Nueva Tarea</h3>
+                <TaskInput onAdd={handleAddTask} />
+                <button className="btn-text" style={{ marginTop: '1rem', width: '100%', textAlign: 'center', color: 'var(--text-secondary)' }} onClick={() => setShowTaskModal(false)}>
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       <style>{`
-         @keyframes fall {
-           to { transform: translateY(110vh) rotate(720deg); }
-         }
+        .pill-active { background: linear-gradient(135deg, var(--accent-color), #ff719a); color: white; border: none; box-shadow: 0 4px 15px rgba(255, 45, 85, 0.4); }
+        .pill-inactive { background: var(--glass-bg); color: var(--text-secondary); border: 1px solid var(--glass-border); backdrop-filter: blur(10px); }
+        .pill-inactive:hover { background: var(--bg-color-secondary); color: var(--text-primary); }
       `}</style>
     </div>
   );
