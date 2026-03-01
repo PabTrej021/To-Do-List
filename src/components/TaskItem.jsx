@@ -3,11 +3,12 @@ import { useState, useRef } from 'react';
 const CheckIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className="check-svg"><path d="M20 6 9 17l-5-5" /></svg>;
 const TrashIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>;
 const CheckCircleIcon = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" /></svg>;
+const PencilIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /><path d="m15 5 4 4" /></svg>;
 
 // Base64 short pop sound for completion
 const POP_SOUND = "data:audio/mp3;base64,//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq";
 
-export default function TaskItem({ task, onToggle, onDelete }) {
+export default function TaskItem({ task, onToggle, onDelete, onEdit }) {
   const [isSwiping, setIsSwiping] = useState(false);
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -122,12 +123,17 @@ export default function TaskItem({ task, onToggle, onDelete }) {
         <div className="task-content">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <p className="task-title">{task.title}</p>
-            {/* Priority Badge */}
-            {!task.completed && (
-              <span className={`priority-badge priority-${priority}`}>
-                {priority.charAt(0).toUpperCase() + priority.slice(1)}
-              </span>
-            )}
+            {/* Priority Badge & Edit */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              {!task.completed && (
+                <span className={`priority-badge priority-${priority}`}>
+                  {priority.charAt(0).toUpperCase() + priority.slice(1)}
+                </span>
+              )}
+              <button className="edit-btn" onClick={() => onEdit(task)} aria-label="Editar tarea">
+                <PencilIcon />
+              </button>
+            </div>
           </div>
 
           <p className="task-description">{task.description}</p>
@@ -173,6 +179,10 @@ export default function TaskItem({ task, onToggle, onDelete }) {
         /* Inline Progress */
         .task-progress-track { width: 100%; height: 4px; background-color: var(--bg-color-secondary); border-radius: 99px; overflow: hidden; }
         .task-progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent-color), #ffcc00); border-radius: 99px; transition: width 0.8s ease-out; }
+
+        /* Edit Button */
+        .edit-btn { background: var(--bg-color-secondary); border: 1px solid var(--glass-border); color: var(--text-secondary); border-radius: 8px; padding: 0.35rem; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all var(--transition-fast); }
+        .edit-btn:hover { color: var(--accent-color); background: var(--glass-bg); transform: scale(1.05); }
 
         .task-card.completed .task-title, .task-card.completed .task-description { color: var(--text-secondary); text-decoration: line-through; opacity: 0.5; }
         .task-card.completed .task-progress-fill { background: var(--text-secondary); }

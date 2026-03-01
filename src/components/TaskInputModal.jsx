@@ -11,16 +11,18 @@ const CATEGORIES = [
   { id: 'other', color: 'var(--text-secondary)' }
 ];
 
-export default function TaskInputModal({ onAdd, onCancel }) {
+export default function TaskInputModal({ onAdd, onCancel, taskToEdit }) {
   const { t } = useI18n();
-  const [title, setTitle] = useState('');
-  const [category, setCategory] = useState('other');
-  const [dueDate, setDueDate] = useState('');
+  const isEditing = !!taskToEdit;
+
+  const [title, setTitle] = useState(taskToEdit?.title || '');
+  const [category, setCategory] = useState(taskToEdit?.category || 'other');
+  const [dueDate, setDueDate] = useState(taskToEdit?.due_date ? taskToEdit.due_date.slice(0, 16) : '');
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (title.trim()) {
-      onAdd(title.trim(), category, dueDate);
+      onAdd(title.trim(), category, dueDate, isEditing ? taskToEdit.id : null);
       setTitle('');
     }
   };
@@ -70,7 +72,7 @@ export default function TaskInputModal({ onAdd, onCancel }) {
           </div>
 
           <div className="modal-actions">
-            <button type="button" className="btn-cancel" onClick={onCancel}>
+            <button type="button" className="btn-cancel-modal" onClick={onCancel}>
               {t('cancel')}
             </button>
             <button
@@ -78,7 +80,7 @@ export default function TaskInputModal({ onAdd, onCancel }) {
               disabled={!title.trim()}
               className="btn-add"
             >
-              {t('add')} <PlusIcon />
+              {isEditing ? 'Guardar Cambios' : t('add')} {!isEditing && <PlusIcon />}
             </button>
           </div>
         </form>
@@ -102,11 +104,18 @@ export default function TaskInputModal({ onAdd, onCancel }) {
           padding: 2rem;
           box-shadow: 0 25px 50px rgba(0,0,0,0.5);
           animation: slideUpFadeIn 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+          transform: translateZ(0);
+          will-change: transform, opacity;
+        }
+
+        /* Mobile specific modal height */
+        @media (max-width: 768px) {
+           .modal-content { max-height: 85vh; overflow-y: auto; }
         }
 
         @keyframes slideUpFadeIn {
-          from { opacity: 0; transform: translateY(30px); }
-          to { opacity: 1; transform: translateY(0); }
+          from { opacity: 0; transform: translateY(30px) translateZ(0); }
+          to { opacity: 1; transform: translateY(0) translateZ(0); }
         }
 
         .modal-title { font-size: 1.5rem; margin-bottom: 1.5rem; color: var(--text-primary); }
@@ -116,24 +125,37 @@ export default function TaskInputModal({ onAdd, onCancel }) {
         .input-large {
           width: 100%;
           font-size: 1.25rem;
-          padding: 0.5rem 0;
+          padding: 0.75rem 0.5rem;
           border-bottom: 2px solid var(--glass-border);
-          border-radius: 0;
-          background: transparent;
+          border-radius: 8px 8px 0 0;
+          background: rgba(0, 0, 0, 0.03); /* Light Mode High Contrast */
+          transition: all var(--transition-fast);
         }
-        .input-large:focus { border-bottom-color: var(--accent-color); }
+        :root.dark-mode .input-large {
+           background: rgba(255, 255, 255, 0.1);
+           border: 1px solid rgba(255, 255, 255, 0.2);
+           color: #fff;
+        }
+
+        .input-large:focus { border-bottom-color: var(--accent-color); background: rgba(0, 0, 0, 0.05); }
+        :root.dark-mode .input-large:focus { background: rgba(255, 255, 255, 0.15); }
 
         .input-group { display: flex; flex-direction: column; gap: 0.5rem; }
-        .input-group label { font-size: 0.85rem; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+        .input-group label { font-size: 0.85rem; color: var(--text-primary); opacity: 0.9; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
         
         .datetime-input {
           padding: 0.85rem 1rem;
           border-radius: 12px;
-          background-color: var(--bg-color-secondary);
+          background-color: rgba(0, 0, 0, 0.03);
           border: 1px solid var(--glass-border);
           color: var(--text-primary);
           font-family: 'Inter', sans-serif;
           width: 100%;
+        }
+        :root.dark-mode .datetime-input {
+           background: rgba(255, 255, 255, 0.1);
+           border: 1px solid rgba(255, 255, 255, 0.2);
+           color: #fff;
         }
         
         .datetime-input::-webkit-calendar-picker-indicator {
@@ -169,16 +191,21 @@ export default function TaskInputModal({ onAdd, onCancel }) {
           display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1rem;
         }
 
-        .btn-cancel {
+        .btn-cancel-modal {
           padding: 0.85rem 1.5rem; border-radius: 99px; color: var(--text-secondary); font-weight: 600;
+          border: 1px solid var(--glass-border);
+          background: transparent;
+          transition: all var(--transition-fast);
+          touch-action: manipulation;
         }
-        .btn-cancel:hover { color: var(--text-primary); background-color: var(--bg-color-secondary); }
+        .btn-cancel-modal:hover { color: var(--text-primary); background-color: var(--glass-bg); }
 
         .btn-add {
           display: flex; align-items: center; gap: 0.5rem;
           padding: 0.85rem 1.5rem; border-radius: 99px;
           background: linear-gradient(135deg, var(--accent-color), #ff719a); color: white;
           font-weight: 700; box-shadow: 0 4px 15px rgba(255, 45, 85, 0.4);
+          touch-action: manipulation;
         }
         .btn-add:disabled { opacity: 0.5; box-shadow: none; cursor: not-allowed; }
       `}</style>

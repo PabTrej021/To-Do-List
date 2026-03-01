@@ -39,6 +39,7 @@ function AppContent() {
   const [isRegistering, setIsRegistering] = useState(false);
   const [currentView, setCurrentView] = useState('home');
   const [showTaskModal, setShowTaskModal] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState(null);
 
   // Dashboard Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -145,7 +146,27 @@ function AppContent() {
   };
 
   // Handlers
-  const handleAddTask = async (title, category, dueDate) => {
+  const handleAddTask = async (title, category, dueDate, updateId = null) => {
+    if (updateId) {
+      // ESTAMOS EN MODO EDICIÓN
+      const updatedLocal = tasks.map(t => t.id === updateId ? { ...t, title, category, description: `Categoria: ${category}`, due_date: dueDate } : t);
+      setTasks(updatedLocal);
+      showToast('Tarea Actualizada', 'Los cambios se han guardado con éxito.');
+      setShowTaskModal(false);
+      setTaskToEdit(null);
+
+      if (session) {
+        const { error } = await supabase.from('tasks').update({
+          title,
+          description: `Categoria: ${category}`,
+          due_date: dueDate
+        }).eq('id', updateId);
+        if (error) console.warn('Supabase Update Error:', error);
+      }
+      return;
+    }
+
+    // MODO CREACIÓN NORMAL
     const newTask = {
       id: crypto.randomUUID(),
       title,
@@ -167,12 +188,17 @@ function AppContent() {
       const { error } = await supabase.from('tasks').insert([{
         id: newTask.id,
         title,
-        description: category,
+        description: `Categoria: ${category}`,
         user_id: newTask.user_id,
         due_date: newTask.due_date
       }]);
       if (error && error.code !== '42P01') console.warn('Supabase Insert Error:', error);
     }
+  };
+
+  const handleEditTask = (task) => {
+    setTaskToEdit(task);
+    setShowTaskModal(true);
   };
 
   const handleToggleTask = async (id, currentCompleted) => {
@@ -265,7 +291,7 @@ function AppContent() {
                 <CalendarStrip onSelectDate={(date) => setSelectedDate(date)} />
 
                 <h3 className="text-title" style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>{t('todaysTasks')}</h3>
-                <TaskList tasks={filteredTasks} onToggle={handleToggleTask} onDelete={handleDeleteTask} />
+                <TaskList tasks={filteredTasks} onToggle={handleToggleTask} onDelete={handleDeleteTask} onEdit={handleEditTask} />
               </>
             ) : (
               <StatCharts tasks={mappedTasks} />
@@ -277,7 +303,7 @@ function AppContent() {
 
           {/* FAB for Modals */}
           <div className="fab-container">
-            <button className="fab-button" onClick={() => setShowTaskModal(true)}>
+            <button className="fab-button" onClick={() => { setTaskToEdit(null); setShowTaskModal(true); }}>
               <PlusIcon />
             </button>
           </div>
@@ -296,8 +322,9 @@ function AppContent() {
 
           {showTaskModal && (
             <TaskInputModal
+              taskToEdit={taskToEdit}
               onAdd={handleAddTask}
-              onCancel={() => setShowTaskModal(false)}
+              onCancel={() => { setShowTaskModal(false); setTaskToEdit(null); }}
             />
           )}
         </>
