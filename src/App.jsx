@@ -186,8 +186,8 @@ function AppContent() {
 
       {!session ? (
         isRegistering
-          ? <Register onToast={showToast} onSwitchToLogin={() => setIsRegistering(false)} />
-          : <Login onToast={showToast} onSwitchToRegister={() => setIsRegistering(true)} />
+          ? <Register onToast={showToast} onSwitchToLogin={() => setIsRegistering(false)} toggleTheme={toggleTheme} darkMode={darkMode} />
+          : <Login onToast={showToast} onSwitchToRegister={() => setIsRegistering(true)} toggleTheme={toggleTheme} darkMode={darkMode} />
       ) : (
         <>
           <Header

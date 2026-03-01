@@ -6,13 +6,16 @@ const MailIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="non
 const LockIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>;
 const EyeIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>;
 const EyeOffIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" /><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" /><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" /><line x1="2" x2="22" y1="2" y2="22" /></svg>;
+const SunIcon = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4" /><path d="M12 2v2" /><path d="M12 20v2" /><path d="m4.93 4.93 1.41 1.41" /><path d="m17.66 17.66 1.41 1.41" /><path d="M2 12h2" /><path d="M20 12h2" /><path d="m6.34 17.66-1.41 1.41" /><path d="m19.07 4.93-1.41 1.41" /></svg>;
+const MoonIcon = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" /></svg>;
 
-export default function Login({ onToast, onSwitchToRegister }) {
+
+export default function Login({ onToast, onSwitchToRegister, toggleTheme, darkMode }) {
     const [loading, setLoading] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    const [rememberMe, setRememberMe] = useState(false); // In a real app we'd configure supabase local storage persistance based on this
+    const [rememberMe, setRememberMe] = useState(false);
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -31,15 +34,22 @@ export default function Login({ onToast, onSwitchToRegister }) {
 
     return (
         <div className="auth-container">
+            {/* Theme Toggle Button for Auth */}
+            <div className="auth-theme-toggle">
+                <button onClick={toggleTheme} className="theme-toggle-btn glass-panel" aria-label="Toggle theme">
+                    {darkMode ? <SunIcon /> : <MoonIcon />}
+                </button>
+            </div>
+
             <div className="glass-panel" style={{ width: '100%', maxWidth: '400px', textAlign: 'center' }}>
                 <div style={{ marginBottom: '2rem' }}>
-                    <h2 className="text-title">Hola de nuevo 👋</h2>
+                    <h2 className="text-title">To-do List</h2>
                     <p className="text-subtitle">Organiza tu vida con estilo.</p>
                 </div>
 
                 <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
-                    <div className="input-group">
+                    <div className="input-group-auth">
                         <div className="input-icon"><MailIcon /></div>
                         <input
                             type="email"
@@ -51,19 +61,19 @@ export default function Login({ onToast, onSwitchToRegister }) {
                         />
                     </div>
 
-                    <div className="input-group">
+                    <div className="input-group-auth">
                         <div className="input-icon"><LockIcon /></div>
                         <input
                             type={showPassword ? "text" : "password"}
                             required
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="input-field"
+                            className="input-field password-input"
                             placeholder="Tu contraseña"
                         />
                         <button
                             type="button"
-                            className="password-toggle"
+                            className="eye-icon-btn"
                             onClick={() => setShowPassword(!showPassword)}
                         >
                             {showPassword ? <EyeOffIcon /> : <EyeIcon />}
@@ -102,40 +112,15 @@ export default function Login({ onToast, onSwitchToRegister }) {
           justify-content: center;
           min-height: 85vh;
           padding: 1rem;
-        }
-        .input-group {
           position: relative;
-          width: 100%;
         }
-        .input-icon {
+        
+        .auth-theme-toggle {
           position: absolute;
-          left: 1.25rem;
-          top: 50%;
-          transform: translateY(-50%);
-          color: var(--text-secondary);
-          display: flex;
-          align-items: center;
-          pointer-events: none;
-        }
-        .input-field {
-          padding-left: 3.5rem !important;
-          padding-right: 3.5rem !important;
-        }
-        .password-toggle {
-          position: absolute;
+          top: 1rem;
           right: 1rem;
-          top: 50%;
-          transform: translateY(-50%);
-          color: var(--text-secondary);
-          display: flex;
-          align-items: center;
-          padding: 0.25rem;
-          border-radius: 50%;
         }
-        .password-toggle:hover {
-          color: var(--text-primary);
-          background-color: var(--bg-color-secondary);
-        }
+
         .btn-text {
           color: var(--accent-color);
           font-weight: 600;

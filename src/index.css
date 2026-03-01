@@ -473,3 +473,52 @@ input {
 .css-bar.active {
   background: linear-gradient(180deg, var(--accent-color), transparent);
 }
+
+/* ========================================= */
+/* AUTHENTICATION INPUTS & EYE ICONS         */
+/* ========================================= */
+.input-group-auth {
+  position: relative;
+  width: 100%;
+}
+
+.input-group-auth .input-icon {
+  position: absolute;
+  left: 1.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+.input-group-auth .input-field {
+  padding-left: 3.5rem !important;
+}
+
+.password-input {
+  padding-right: 40px !important;
+}
+
+.eye-icon-btn {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem;
+  background: none;
+  border: none;
+  border-radius: 50%;
+  transition: all var(--transition-fast);
+}
+
+.eye-icon-btn:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-color-secondary);
+}
