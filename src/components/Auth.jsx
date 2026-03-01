@@ -1,10 +1,15 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { motion } from 'framer-motion';
-import { Mail, Lock, Loader2, LogIn, UserPlus } from 'lucide-react';
-import toast from 'react-hot-toast';
 
-export default function Auth() {
+// SVG Icons Inline for Zero Dependencies
+const MailIcon = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" /></svg>
+);
+const LockIcon = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+);
+
+export default function Auth({ onToast }) {
     const [loading, setLoading] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -16,119 +21,99 @@ export default function Auth() {
 
         try {
             if (isSignUp) {
-                const { error } = await supabase.auth.signUp({
-                    email,
-                    password,
-                });
+                const { error } = await supabase.auth.signUp({ email, password });
                 if (error) throw error;
-                toast.success('¡Registro exitoso! Por favor, verifica tu correo.');
+                onToast('Success', 'Registro exitoso. Verifica tu correo.');
             } else {
-                const { error } = await supabase.auth.signInWithPassword({
-                    email,
-                    password,
-                });
+                const { error } = await supabase.auth.signInWithPassword({ email, password });
                 if (error) throw error;
-                toast.success('¡Bienvenido de nuevo!');
+                onToast('Success', '¡Bienvenido de nuevo!');
             }
         } catch (error) {
-            toast.error(error.message || 'Error occurred during authentication');
+            onToast('Error', error.message || 'Error de autenticación');
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center p-4">
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden border border-slate-100 dark:border-slate-700"
-            >
-                <div className="p-8">
-                    <div className="text-center mb-8">
-                        <motion.h2
-                            key={isSignUp ? 'signup' : 'login'}
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="text-3xl font-bold text-slate-900 dark:text-white mb-2"
-                        >
-                            {isSignUp ? 'Crear Cuenta' : 'Iniciar Sesión'}
-                        </motion.h2>
-                        <p className="text-slate-500 dark:text-slate-400">
-                            {isSignUp
-                                ? 'Únete para organizar tus tareas como un pro'
-                                : 'Ingresa para continuar con tus tareas'}
-                        </p>
+        <div className="auth-container">
+            <div className="glass-panel" style={{ maxWidth: '400px', margin: '0 auto', textAlign: 'center' }}>
+                <h2 className="text-title" style={{ marginBottom: '0.25rem' }}>
+                    {isSignUp ? 'Crear Cuenta' : 'Iniciar Sesión'}
+                </h2>
+                <p className="text-subtitle" style={{ marginBottom: '2rem' }}>
+                    {isSignUp ? 'Organiza tu día con nosotros' : 'Continúa donde lo dejaste'}
+                </p>
+
+                <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div className="input-group">
+                        <div className="input-icon"><MailIcon /></div>
+                        <input
+                            type="email"
+                            required
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="input-field"
+                            placeholder="correo@ejemplo.com"
+                            style={{ paddingLeft: '3rem' }}
+                        />
                     </div>
 
-                    <form onSubmit={handleAuth} className="space-y-6">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                                Correo Electrónico
-                            </label>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Mail className="h-5 w-5 text-slate-400" />
-                                </div>
-                                <input
-                                    type="email"
-                                    required
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    className="block w-full pl-10 pr-3 py-3 border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                                    placeholder="tu@correo.com"
-                                />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                                Contraseña
-                            </label>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Lock className="h-5 w-5 text-slate-400" />
-                                </div>
-                                <input
-                                    type="password"
-                                    required
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    className="block w-full pl-10 pr-3 py-3 border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                                    placeholder="••••••••"
-                                />
-                            </div>
-                        </div>
-
-                        <motion.button
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            type="submit"
-                            disabled={loading}
-                            className="w-full py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
-                        >
-                            {loading ? (
-                                <Loader2 className="animate-spin h-5 w-5" />
-                            ) : isSignUp ? (
-                                <><UserPlus className="mr-2 h-5 w-5" /> Registrarse</>
-                            ) : (
-                                <><LogIn className="mr-2 h-5 w-5" /> Entrar</>
-                            )}
-                        </motion.button>
-                    </form>
-
-                    <div className="mt-6 text-center">
-                        <button
-                            onClick={() => setIsSignUp(!isSignUp)}
-                            className="text-sm font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
-                        >
-                            {isSignUp
-                                ? '¿Ya tienes una cuenta? Inicia sesión'
-                                : '¿No tienes cuenta? Regístrate'}
-                        </button>
+                    <div className="input-group">
+                        <div className="input-icon"><LockIcon /></div>
+                        <input
+                            type="password"
+                            required
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="input-field"
+                            placeholder="••••••••"
+                            style={{ paddingLeft: '3rem' }}
+                        />
                     </div>
-                </div>
-            </motion.div>
+
+                    <button type="submit" disabled={loading} className="btn-primary" style={{ marginTop: '0.5rem' }}>
+                        {loading ? 'Cargando...' : isSignUp ? 'Registrarse' : 'Entrar'}
+                    </button>
+                </form>
+
+                <button
+                    onClick={() => setIsSignUp(!isSignUp)}
+                    className="btn-text"
+                >
+                    {isSignUp ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Regístrate'}
+                </button>
+            </div>
+
+            <style>{`
+        .auth-container {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 80vh;
+        }
+        .input-group {
+          position: relative;
+          width: 100%;
+        }
+        .input-icon {
+          position: absolute;
+          left: 1rem;
+          top: 50%;
+          transform: translateY(-50%);
+          color: var(--text-secondary);
+          display: flex;
+          align-items: center;
+        }
+        .btn-text {
+          margin-top: 1.5rem;
+          color: var(--accent-color);
+          font-weight: 500;
+          font-size: 0.9rem;
+        }
+        .btn-text:hover { color: var(--accent-color-hover); }
+      `}</style>
         </div>
     );
 }

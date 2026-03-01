@@ -1,42 +1,44 @@
-import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import TaskItem from './TaskItem';
-import { motion, AnimatePresence } from 'framer-motion';
 
-export default function TaskList({ tasks, onToggle, onDelete, onDragEnd }) {
+export default function TaskList({ tasks, onToggle, onDelete }) {
     if (tasks.length === 0) {
         return (
-            <div className="text-center py-12 px-4 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-50/50 dark:bg-slate-800/50">
-                <span className="text-6xl mb-4 block">🏝️</span>
-                <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-1">Todo en orden</h3>
-                <p className="text-slate-500 dark:text-slate-400">No tienes tareas pendientes. ¡Disfruta tu día!</p>
+            <div className="empty-state">
+                <div className="empty-icon">📝</div>
+                <h3 className="text-title" style={{ fontSize: '1.25rem' }}>Tu día está despejado</h3>
+                <p className="text-subtitle">Añade tareas para mantenerte productivo.</p>
+
+                <style>{`
+          .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-secondary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+          }
+          .empty-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+            filter: grayscale(1);
+          }
+        `}</style>
             </div>
         );
     }
 
     return (
-        <DragDropContext onDragEnd={onDragEnd}>
-            <Droppable droppableId="task-list">
-                {(provided) => (
-                    <div
-                        {...provided.droppableProps}
-                        ref={provided.innerRef}
-                        className="space-y-3"
-                    >
-                        <AnimatePresence>
-                            {tasks.map((task, index) => (
-                                <TaskItem
-                                    key={task.id}
-                                    task={task}
-                                    index={index}
-                                    onToggle={onToggle}
-                                    onDelete={onDelete}
-                                />
-                            ))}
-                        </AnimatePresence>
-                        {provided.placeholder}
-                    </div>
-                )}
-            </Droppable>
-        </DragDropContext>
+        <div className="task-list">
+            {tasks.map((task) => (
+                <TaskItem
+                    key={task.id}
+                    task={task}
+                    onToggle={onToggle}
+                    onDelete={onDelete}
+                />
+            ))}
+        </div>
     );
 }

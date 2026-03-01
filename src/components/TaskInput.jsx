@@ -1,45 +1,11 @@
-import { useState, useRef, useEffect } from 'react';
-import { Mic, MicOff, Plus } from 'lucide-react';
+import { useState } from 'react';
+
+const PlusIcon = () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="M12 5v14" /></svg>
+);
 
 export default function TaskInput({ onAdd }) {
     const [title, setTitle] = useState('');
-    const [isListening, setIsListening] = useState(false);
-    const recognitionRef = useRef(null);
-
-    useEffect(() => {
-        // Inicializar Web Speech API
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (SpeechRecognition) {
-            const recognition = new SpeechRecognition();
-            recognition.continuous = false;
-            recognition.lang = 'es-ES'; // Podría ser configurado dinámicamente
-
-            recognition.onresult = (event) => {
-                const transcript = event.results[event.results.length - 1][0].transcript;
-                setTitle((prev) => (prev ? prev + ' ' + transcript : transcript));
-            };
-
-            recognition.onerror = (event) => {
-                console.error('Speech recognition error', event.error);
-                setIsListening(false);
-            };
-
-            recognition.onend = () => {
-                setIsListening(false);
-            };
-
-            recognitionRef.current = recognition;
-        }
-    }, []);
-
-    const toggleListen = () => {
-        if (isListening) {
-            recognitionRef.current?.stop();
-        } else {
-            recognitionRef.current?.start();
-            setIsListening(true);
-        }
-    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -50,38 +16,82 @@ export default function TaskInput({ onAdd }) {
     };
 
     return (
-        <form onSubmit={handleSubmit} className="flex gap-2 items-center bg-white dark:bg-slate-800 p-2 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-all">
-            <div className="flex-1 flex items-center gap-2 pl-3">
+        <form onSubmit={handleSubmit} className="task-input-form glass-panel">
+            <div className="input-wrapper">
                 <input
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="¿Qué necesitas hacer hoy? (Cmd+K para enfocar buscar)"
-                    className="w-full bg-transparent border-none focus:ring-0 text-slate-700 dark:text-slate-200 placeholder-slate-400 outline-none"
+                    placeholder="Añadir nueva tarea..."
+                    className="clean-input"
                 />
             </div>
-
-            {recognitionRef.current && (
-                <button
-                    type="button"
-                    onClick={toggleListen}
-                    className={`p-3 rounded-xl transition-colors ${isListening
-                            ? 'bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400 animate-pulse'
-                            : 'hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
-                        }`}
-                    title="Dictar por voz"
-                >
-                    {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-                </button>
-            )}
-
             <button
                 type="submit"
                 disabled={!title.trim()}
-                className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="add-button"
+                aria-label="Añadir tarea"
             >
-                <Plus className="w-5 h-5" />
+                <PlusIcon />
             </button>
+
+            <style>{`
+        .task-input-form {
+          display: flex;
+          align-items: center;
+          padding: 0.5rem 0.5rem 0.5rem 1.25rem;
+          margin-bottom: 2rem;
+          background-color: var(--bg-color-secondary);
+        }
+        
+        .input-wrapper {
+          flex: 1;
+        }
+
+        .clean-input {
+          width: 100%;
+          border: none;
+          background: transparent;
+          font-size: 1.05rem;
+          color: var(--text-primary);
+          outline: none;
+        }
+        
+        .clean-input::placeholder {
+          color: var(--text-secondary);
+          opacity: 0.7;
+        }
+
+        .add-button {
+          background-color: var(--accent-color);
+          color: white;
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all var(--transition-fast);
+          flex-shrink: 0;
+          box-shadow: 0 4px 10px rgba(0, 122, 255, 0.3);
+        }
+
+        .add-button:hover:not(:disabled) {
+          background-color: var(--accent-color-hover);
+          transform: scale(1.05);
+        }
+
+        .add-button:active:not(:disabled) {
+          transform: scale(0.95);
+        }
+
+        .add-button:disabled {
+          background-color: var(--text-secondary);
+          opacity: 0.3;
+          box-shadow: none;
+          cursor: default;
+        }
+      `}</style>
         </form>
     );
 }

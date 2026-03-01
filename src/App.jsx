@@ -1,19 +1,32 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from './lib/supabase';
 import Auth from './components/Auth';
 import Dashboard from './components/Dashboard';
 import TaskList from './components/TaskList';
 import TaskInput from './components/TaskInput';
-import { Toaster, toast } from 'react-hot-toast';
-import { Sun, Moon, LogOut, Search } from 'lucide-react';
+
+// Inline Icons
+const SunIcon = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4" /><path d="M12 2v2" /><path d="M12 20v2" /><path d="m4.93 4.93 1.41 1.41" /><path d="m17.66 17.66 1.41 1.41" /><path d="M2 12h2" /><path d="M20 12h2" /><path d="m6.34 17.66-1.41 1.41" /><path d="m19.07 4.93-1.41 1.41" /></svg>;
+const MoonIcon = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" /></svg>;
+const LogOutIcon = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" x2="9" y1="12" y2="12" /></svg>;
 
 export default function App() {
   const [session, setSession] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const searchInputRef = useRef(null);
+  const [toast, setToast] = useState({ visible: false, title: '', message: '' });
+
+  // Custom "Dynamic Island" Toast System
+  const showToast = useCallback((title, message) => {
+    setToast({ visible: true, title, message });
+    // Trigger tiny haptic feedback for toast
+    if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(20);
+
+    setTimeout(() => {
+      setToast(prev => ({ ...prev, visible: false }));
+    }, 3000);
+  }, []);
 
   // Auth and Session
   useEffect(() => {
@@ -38,43 +51,30 @@ export default function App() {
   useEffect(() => {
     const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     setDarkMode(isDark);
-    if (isDark) document.documentElement.classList.add('dark');
+    if (isDark) document.documentElement.classList.add('dark-mode');
   }, []);
 
   const toggleTheme = () => {
     setDarkMode(!darkMode);
-    document.documentElement.classList.toggle('dark');
+    document.documentElement.classList.toggle('dark-mode');
   };
-
-  // Keyboard Shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        searchInputRef.current?.focus();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
 
   // Supabase Data Management
   const fetchTasks = async (userId) => {
     try {
       setLoading(true);
+      // Removed order_index logic for simplicity as requested (no hello-pangea used anymore for resorting)
       const { data, error } = await supabase
         .from('tasks')
         .select('*')
         .eq('user_id', userId)
-        .order('order_index', { ascending: true }); // We'll assume an order_index column
+        .order('created_at', { ascending: false });
 
-      // If table doesn't exist yet, we catch error but don't crash
       if (error && error.code !== '42P01') throw error;
 
       setTasks(data || []);
     } catch (error) {
-      console.log('Using local state, Supabase table might not be ready:', error.message);
-      // Fallback for demo without DB
+      console.log('Error fetching:', error.message);
     } finally {
       setLoading(false);
     }
@@ -84,7 +84,7 @@ export default function App() {
   useEffect(() => {
     if (!session?.user) return;
 
-    const channel = supabase.channel('postgres_changes')
+    const channel = supabase.channel('postgres_changes_app')
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
@@ -95,12 +95,12 @@ export default function App() {
         if (payload.eventType === 'INSERT') {
           setTasks(prev => {
             const exists = prev.find(t => t.id === payload.new.id);
-            if (exists) return prev; // Optimistic update already handled it
-            return [...prev, payload.new].sort((a, b) => a.order_index - b.order_index);
+            if (exists) return prev;
+            return [payload.new, ...prev]; // Prepend new tasks
           });
         }
         if (payload.eventType === 'UPDATE') {
-          setTasks(prev => prev.map(t => t.id === payload.new.id ? payload.new : t).sort((a, b) => a.order_index - b.order_index));
+          setTasks(prev => prev.map(t => t.id === payload.new.id ? payload.new : t));
         }
         if (payload.eventType === 'DELETE') {
           setTasks(prev => prev.filter(t => t.id !== payload.old.id));
@@ -113,31 +113,27 @@ export default function App() {
     };
   }, [session]);
 
-
-  // Actions
   const handleSignOut = async () => {
     await supabase.auth.signOut();
   };
 
   const handleAddTask = async (title) => {
     const newTask = {
-      id: crypto.randomUUID(), // Optimistic ID
+      id: crypto.randomUUID(),
       title,
       completed: false,
       user_id: session?.user?.id,
-      order_index: tasks.length,
       created_at: new Date().toISOString()
     };
 
     // Optimistic Update
-    setTasks(prev => [...prev, newTask]);
+    setTasks(prev => [newTask, ...prev]);
 
     if (session) {
       try {
         const { error } = await supabase.from('tasks').insert([newTask]);
-        if (error) {
-          // Rollback logic could go here
-          if (error.code !== '42P01') toast.error('Error al guardar tarea');
+        if (error && error.code !== '42P01') {
+          showToast('Error', 'No se pudo guardar la tarea');
         }
       } catch (err) {
         console.log(err);
@@ -148,6 +144,7 @@ export default function App() {
   const handleToggleTask = async (id, currentCompleted) => {
     // Optimistic Update
     setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: !currentCompleted } : t));
+    showToast(currentCompleted ? 'Pendiente' : 'Completado', 'Estado actualizado');
 
     if (session) {
       try {
@@ -162,6 +159,7 @@ export default function App() {
   const handleDeleteTask = async (id) => {
     // Optimistic update
     setTasks(prev => prev.filter(t => t.id !== id));
+    showToast('Eliminada', 'Tarea removida con éxito');
 
     if (session) {
       try {
@@ -173,123 +171,71 @@ export default function App() {
     }
   };
 
-  const handleDragEnd = async (result) => {
-    if (!result.destination) return;
-
-    const items = Array.from(filteredTasks);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
-
-    // Update index for all shifted items
-    const updatedTasks = items.map((t, index) => ({ ...t, order_index: index }));
-
-    // Update local state (Optimistic)
-    // We map back to the original full tasks array by matching IDs
-    const newFullTasks = tasks.map(t => {
-      const updated = updatedTasks.find(ut => ut.id === t.id);
-      return updated ? updated : t;
-    });
-
-    setTasks(newFullTasks);
-
-    if (session) {
-      try {
-        // En un caso real masivo, querrías una función RPC para reordenamiento de backend.
-        // Aquí hacemos upsert en batch o updates individuales.
-        const updates = updatedTasks.map(t => ({ id: t.id, order_index: t.order_index }));
-        const { error } = await supabase.from('tasks').upsert(updates, { onConflict: 'id', ignoreDuplicates: false });
-        // Ignoramos error de tabla no existente en demo
-      } catch (e) {
-        console.log(e);
-      }
-    }
-  };
-
-  const filteredTasks = tasks.filter(t => t.title.toLowerCase().includes(searchTerm.toLowerCase()));
-
+  // Loading State
   if (loading && !session) {
-    return <div className="min-h-screen flex items-center justify-center dark:bg-slate-900"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>;
-  }
-
-  if (!session) {
     return (
-      <div className="dark:bg-slate-900 min-h-screen transition-colors duration-300">
-        <Toaster position="top-center" />
-        <div className="absolute top-4 right-4 focus:outline-none">
-          <button onClick={toggleTheme} className="p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-            {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-          </button>
-        </div>
-        <Auth />
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <p className="text-secondary">Cargando...</p>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-300 pb-20">
-      <Toaster position="top-center" />
-
-      {/* Header */}
-      <header className="sticky top-0 z-40 backdrop-blur-md bg-white/70 dark:bg-slate-900/70 border-b border-slate-200 dark:border-slate-800">
-        <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
-          <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">
-            TaskMaster Pro
-          </h1>
-
-          <div className="flex items-center gap-3">
-            <div className="relative hidden sm:block">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                ref={searchInputRef}
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Buscar... (Cmd+K)"
-                className="pl-9 pr-4 py-2 text-sm rounded-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border-none focus:ring-2 focus:ring-blue-500 outline-none w-48 lg:w-64 transition-all"
-              />
+  // Not Authenticated
+  if (!session) {
+    return (
+      <div className="app-container">
+        {toast.visible && (
+          <div className="dynamic-island-container">
+            <div className={`dynamic-island animate-enter`}>
+              {toast.title}: {toast.message}
             </div>
-
-            <button onClick={toggleTheme} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors">
-              {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </button>
-
-            <button onClick={handleSignOut} className="p-2 rounded-full hover:bg-rose-100 dark:hover:bg-rose-900/30 text-rose-500 transition-colors" title="Cerrar sesión">
-              <LogOut className="w-5 h-5" />
-            </button>
           </div>
+        )}
+        <div style={{ position: 'absolute', top: '1.5rem', right: '1.5rem' }}>
+          <button onClick={toggleTheme} className="theme-toggle-btn" aria-label="Cambiar tema">
+            {darkMode ? <SunIcon /> : <MoonIcon />}
+          </button>
+        </div>
+        <Auth onToast={showToast} />
+      </div>
+    );
+  }
+
+  // Authenticated Dashboard
+  return (
+    <div className="app-container">
+
+      {/* Dynamic Island Toast */}
+      {toast.visible && (
+        <div className="dynamic-island-container">
+          <div className="dynamic-island animate-enter">
+            <span style={{ opacity: 0.7, fontWeight: 400 }}>{toast.title}</span> {toast.message}
+          </div>
+        </div>
+      )}
+
+      {/* Main Header */}
+      <header className="app-header">
+        <h1 className="text-title" style={{ margin: 0, fontSize: '1.5rem' }}>Listas</h1>
+
+        <div className="flex-row" style={{ gap: '1rem' }}>
+          <button onClick={toggleTheme} className="theme-toggle-btn" aria-label="Cambiar tema">
+            {darkMode ? <SunIcon /> : <MoonIcon />}
+          </button>
+          <button onClick={handleSignOut} className="theme-toggle-btn" style={{ color: 'var(--danger-color)' }} aria-label="Cerrar sesión">
+            <LogOutIcon />
+          </button>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-8 space-y-8">
-
-        {/* Search Mobile */}
-        <div className="sm:hidden relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Buscar tareas..."
-            className="w-full pl-12 pr-4 py-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm"
-          />
-        </div>
-
+      <main>
         <Dashboard tasks={tasks} />
-
-        {/* List Section */}
-        <section className="bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm rounded-3xl p-4 md:p-6 border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
-          <div className="mb-6">
-            <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-4">Tus Tareas</h2>
-            <TaskInput onAdd={handleAddTask} />
-          </div>
-
-          <TaskList
-            tasks={filteredTasks}
-            onToggle={handleToggleTask}
-            onDelete={handleDeleteTask}
-            onDragEnd={handleDragEnd}
-          />
-        </section>
+        <TaskInput onAdd={handleAddTask} />
+        <TaskList
+          tasks={tasks}
+          onToggle={handleToggleTask}
+          onDelete={handleDeleteTask}
+        />
       </main>
 
     </div>
