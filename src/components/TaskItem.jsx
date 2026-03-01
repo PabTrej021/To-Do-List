@@ -1,140 +1,183 @@
 import { useState, useRef } from 'react';
 
-const CheckIcon = () => (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="check-svg"><path d="M20 6 9 17l-5-5" /></svg>
-);
+const CheckIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className="check-svg"><path d="M20 6 9 17l-5-5" /></svg>;
+const TrashIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>;
+const CheckCircleIcon = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" /></svg>;
 
-const TrashIcon = () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>
-);
+// Base64 short pop sound for completion
+const POP_SOUND = "data:audio/mp3;base64,//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq";
 
 export default function TaskItem({ task, onToggle, onDelete }) {
-    const [isSwiping, setIsSwiping] = useState(false);
-    const [swipeOffset, setSwipeOffset] = useState(0);
-    const [isDeleting, setIsDeleting] = useState(false);
+  const [isSwiping, setIsSwiping] = useState(false);
+  const [swipeOffset, setSwipeOffset] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-    const touchStartRef = useRef(null);
-    const itemRef = useRef(null);
+  const touchStartRef = useRef(null);
+  const itemRef = useRef(null);
+  const audioRef = useRef(typeof Audio !== "undefined" ? new Audio(POP_SOUND) : null);
 
-    const SWIPE_THRESHOLD = -80; // Distance needed to reveal delete button
+  const SWIPE_LEFT_THRESHOLD = -80;  // Revelar borrar
+  const SWIPE_RIGHT_THRESHOLD = 80;  // Completar
 
-    const triggerHaptic = (pattern = 50) => {
-        if (window.navigator && window.navigator.vibrate) {
-            window.navigator.vibrate(pattern);
-        }
-    };
+  const triggerHaptic = (pattern = 50) => {
+    if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(pattern);
+  };
 
-    const handleToggle = () => {
-        triggerHaptic(30);
-        onToggle(task.id, task.completed);
-    };
+  const playSound = () => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(() => console.log("Audio play blocked by browser"));
+    }
+  };
 
-    const handleDelete = () => {
-        setIsDeleting(true);
-        triggerHaptic([50, 50, 50]);
-        setTimeout(() => {
-            onDelete(task.id);
-        }, 300); // Wait for shrink animation
-    };
+  const handleToggle = () => {
+    if (!task.completed) playSound();
+    triggerHaptic(task.completed ? 30 : [30, 50, 30]); // Haptic pattern on complet
+    onToggle(task.id, task.completed);
+    setSwipeOffset(0);
+  };
 
-    // Touch Events for Swipe-to-Delete
-    const handleTouchStart = (e) => {
-        touchStartRef.current = e.touches[0].clientX;
-        setIsSwiping(true);
-    };
+  const handleDelete = () => {
+    setIsDeleting(true);
+    triggerHaptic([50, 50, 50]);
+    setTimeout(() => {
+      onDelete(task.id);
+    }, 300);
+  };
 
-    const handleTouchMove = (e) => {
-        if (!touchStartRef.current) return;
-        const currentX = e.touches[0].clientX;
-        const diff = currentX - touchStartRef.current;
+  // Touch Events
+  const handleTouchStart = (e) => {
+    touchStartRef.current = e.touches[0].clientX;
+    setIsSwiping(true);
+  };
 
-        // Solo permitir swipe a la izquierda
-        if (diff < 0) {
-            // Add resistance when pulling past the threshold
-            const offset = diff < SWIPE_THRESHOLD ? SWIPE_THRESHOLD + (diff - SWIPE_THRESHOLD) * 0.2 : diff;
-            setSwipeOffset(offset);
-        }
-    };
+  const handleTouchMove = (e) => {
+    if (!touchStartRef.current) return;
+    const currentX = e.touches[0].clientX;
+    const diff = currentX - touchStartRef.current;
 
-    const handleTouchEnd = () => {
-        setIsSwiping(false);
-        if (swipeOffset <= SWIPE_THRESHOLD + 20) {
-            // Snap open
-            setSwipeOffset(SWIPE_THRESHOLD);
-            triggerHaptic(20);
-        } else {
-            // Snap back
-            setSwipeOffset(0);
-        }
-        touchStartRef.current = null;
-    };
+    // Resistencia elástica en los bordes
+    if (diff < 0) {
+      // Left swipe (Delete)
+      const offset = diff < SWIPE_LEFT_THRESHOLD ? SWIPE_LEFT_THRESHOLD + (diff - SWIPE_LEFT_THRESHOLD) * 0.2 : diff;
+      setSwipeOffset(offset);
+    } else if (diff > 0) {
+      // Right swipe (Complete)
+      const offset = diff > SWIPE_RIGHT_THRESHOLD ? SWIPE_RIGHT_THRESHOLD + (diff - SWIPE_RIGHT_THRESHOLD) * 0.2 : diff;
+      setSwipeOffset(offset);
+    }
+  };
 
-    return (
-        <div className={`task-wrapper ${isDeleting ? 'deleting' : ''}`} ref={itemRef}>
+  const handleTouchEnd = () => {
+    setIsSwiping(false);
 
-            {/* Background Delete Button (Revealed on swipe) */}
-            <div className="task-background-delete">
-                <button onClick={handleDelete} className="delete-btn">
-                    <TrashIcon />
-                    <span>Eliminar</span>
-                </button>
-            </div>
+    if (swipeOffset <= SWIPE_LEFT_THRESHOLD + 20) {
+      // Snap open Delete
+      setSwipeOffset(SWIPE_LEFT_THRESHOLD);
+      triggerHaptic(20);
+    } else if (swipeOffset >= SWIPE_RIGHT_THRESHOLD - 20) {
+      // Trigger Complete
+      handleToggle();
+      setSwipeOffset(0); // bounce back
+    } else {
+      // Snap back
+      setSwipeOffset(0);
+    }
+    touchStartRef.current = null;
+  };
 
-            {/* Foreground Task Card */}
-            <div
-                className={`task-card glass-panel ${task.completed ? 'completed' : ''}`}
-                style={{
-                    transform: `translateX(${swipeOffset}px)`,
-                    transition: isSwiping ? 'none' : 'transform var(--transition-normal)'
-                }}
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
-            >
-                <button
-                    className="task-checkbox"
-                    onClick={handleToggle}
-                    aria-label={task.completed ? "Marcar como pendiente" : "Marcar como completada"}
-                >
-                    {task.completed && <CheckIcon />}
-                </button>
+  // Determine Tag Color
+  const tagClass = `tag-${task.category ? task.category.toLowerCase() : 'other'}`;
 
-                <div className="task-content">
-                    <p className="task-title">{task.title}</p>
-                    {task.description && <p className="task-description">{task.description}</p>}
-                </div>
-            </div>
+  return (
+    <div className={`task-wrapper ${isDeleting ? 'deleting' : ''}`} ref={itemRef}>
 
-            <style>{`
+      {/* Background Actions */}
+      <div className="task-actions-bg">
+        {/* Left Background (Shown when swiping RIGHT) */}
+        <div className="bg-action-complete" style={{ opacity: swipeOffset > 20 ? 1 : 0 }}>
+          <CheckCircleIcon />
+          <span>{task.completed ? 'Deshacer' : 'Completar'}</span>
+        </div>
+
+        {/* Right Background (Shown when swiping LEFT) */}
+        <div className="bg-action-delete" style={{ opacity: swipeOffset < -20 ? 1 : 0 }}>
+          <button onClick={handleDelete} className="delete-btn">
+            <TrashIcon />
+            <span>Eliminar</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Foreground Task Card */}
+      <div
+        className={`task-card glass-panel ${task.completed ? 'completed' : ''} ${tagClass}`}
+        style={{
+          transform: `translateX(${swipeOffset}px)`,
+          transition: isSwiping ? 'none' : 'transform var(--transition-normal)'
+        }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        <button className="task-checkbox" onClick={handleToggle}>
+          {task.completed && <CheckIcon />}
+        </button>
+
+        <div className="task-content">
+          <p className="task-title">{task.title}</p>
+          {task.description && <p className="task-description">{task.description}</p>}
+        </div>
+      </div>
+
+      <style>{`
         .task-wrapper {
           position: relative;
           width: 100%;
           overflow: hidden;
-          border-radius: var(--border-radius-md);
-          margin-bottom: 0.75rem;
+          margin-bottom: 0.85rem;
           transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+          border-radius: var(--border-radius-lg);
         }
         
         .task-wrapper.deleting {
           opacity: 0;
-          transform: scale(0.95);
+          transform: scale(0.9) translateX(-100%);
           height: 0;
           margin-bottom: 0;
-          padding: 0;
         }
 
-        .task-background-delete {
+        .task-actions-bg {
           position: absolute;
-          top: 0;
-          right: 0;
-          bottom: 0;
-          width: 100%;
-          background-color: var(--danger-color);
-          border-radius: var(--border-radius-md);
+          top: 0; left: 0; right: 0; bottom: 0;
           display: flex;
-          justify-content: flex-end;
+          justify-content: space-between;
+          border-radius: var(--border-radius-lg);
+          overflow: hidden;
+        }
+
+        .bg-action-complete {
+          background-color: var(--success-color);
+          color: white;
+          display: flex;
           align-items: center;
+          padding-left: 1.5rem;
+          width: 50%;
+          font-weight: 700;
+          font-size: 0.85rem;
+          gap: 0.5rem;
+          transition: opacity var(--transition-fast);
+        }
+
+        .bg-action-delete {
+          background-color: var(--danger-color);
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
           padding-right: 1.5rem;
+          width: 50%;
+          transition: opacity var(--transition-fast);
         }
 
         .delete-btn {
@@ -142,54 +185,57 @@ export default function TaskItem({ task, onToggle, onDelete }) {
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 0.25rem;
-          font-size: 0.75rem;
-          font-weight: 600;
+          gap: 0.15rem;
+          font-size: 0.8rem;
+          font-weight: 700;
         }
 
         .task-card {
           position: relative;
           z-index: 10;
           display: flex;
-          align-items: flex-start;
-          gap: 1rem;
-          padding: 1.25rem;
-          min-height: 72px;
+          align-items: center;
+          gap: 1.25rem;
+          padding: 1.25rem 1.5rem;
+          min-height: 80px;
           cursor: grab;
-          background-color: var(--bg-color-secondary);
+          border-left: 4px solid transparent; 
         }
 
-        .task-card:active {
-          cursor: grabbing;
-        }
+        .task-card:active { cursor: grabbing; }
+
+        /* Color Categories */
+        .tag-health { border-left-color: var(--tag-health); box-shadow: -2px 0 10px rgba(255, 59, 48, 0.2); }
+        .tag-work { border-left-color: var(--tag-work); box-shadow: -2px 0 10px rgba(94, 92, 230, 0.2); }
+        .tag-home { border-left-color: var(--tag-home); box-shadow: -2px 0 10px rgba(255, 204, 0, 0.2); }
+        .tag-study { border-left-color: var(--tag-study); box-shadow: -2px 0 10px rgba(50, 173, 230, 0.2); }
+        .tag-other { border-left-color: var(--tag-other); }
 
         .task-checkbox {
           flex-shrink: 0;
-          width: 24px;
-          height: 24px;
+          width: 28px;
+          height: 28px;
           border-radius: 50%;
-          border: 2px solid var(--text-secondary);
+          border: 2.5px solid var(--text-secondary);
           display: flex;
           align-items: center;
           justify-content: center;
-          transition: all var(--transition-fast);
+          transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
           color: white;
-          margin-top: 0.125rem;
-        }
-
-        .task-checkbox:hover {
-          border-color: var(--accent-color);
+          background-color: transparent;
         }
 
         .task-card.completed .task-checkbox {
-          background-color: var(--accent-color);
-          border-color: var(--accent-color);
+          background-color: var(--success-color);
+          border-color: var(--success-color);
+          box-shadow: 0 0 15px rgba(52, 199, 89, 0.6);
+          transform: scale(1.1);
         }
         
         .check-svg {
           stroke-dasharray: 24;
           stroke-dashoffset: 24;
-          animation: drawCheck 0.3s forwards ease-out;
+          animation: drawCheck 0.4s 0.1s forwards ease-out;
         }
 
         @keyframes drawCheck {
@@ -202,27 +248,26 @@ export default function TaskItem({ task, onToggle, onDelete }) {
         }
 
         .task-title {
-          font-weight: 500;
-          font-size: 1.05rem;
+          font-weight: 600;
+          font-size: 1.1rem;
           color: var(--text-primary);
-          transition: color var(--transition-fast);
+          transition: all var(--transition-normal);
           word-break: break-word;
         }
 
         .task-description {
-          font-size: 0.85rem;
+          font-size: 0.9rem;
           color: var(--text-secondary);
           margin-top: 0.25rem;
-          word-break: break-word;
         }
 
         .task-card.completed .task-title,
         .task-card.completed .task-description {
           color: var(--text-secondary);
           text-decoration: line-through;
-          opacity: 0.7;
+          opacity: 0.5;
         }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 }
