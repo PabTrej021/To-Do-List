@@ -30,9 +30,9 @@
   /* Typography */
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 
-  /* Transitions */
-  --transition-fast: 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
-  --transition-normal: 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
+  /* Transitions - Mobile First 120Hz Curves */
+  --transition-fast: 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+  --transition-normal: 0.4s cubic-bezier(0.25, 1, 0.4, 1);
   --transition-slow: 0.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -58,6 +58,14 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Base Interactions */
+button,
+a,
+input[type="submit"],
+input[type="checkbox"] {
+  touch-action: manipulation;
+}
+
 body {
   font-family: var(--font-family);
   background-color: var(--bg-color);
@@ -68,6 +76,31 @@ body {
   transition: background-color var(--transition-normal), color var(--transition-normal);
   overflow-x: hidden;
   position: relative;
+}
+
+/* TIME-BASED BG CLASSIFIERS */
+body.time-morning .blob-1 {
+  background: linear-gradient(135deg, #ff9500, #ffcc00);
+}
+
+body.time-morning .blob-2 {
+  background: linear-gradient(135deg, #32ade6, #34c759);
+}
+
+body.time-afternoon .blob-1 {
+  background: linear-gradient(135deg, #ff2a5f, #ff719a);
+}
+
+body.time-afternoon .blob-2 {
+  background: linear-gradient(135deg, #5e5ce6, #bf5af2);
+}
+
+body.time-evening .blob-1 {
+  background: linear-gradient(135deg, #1c1c1e, #5e5ce6);
+}
+
+body.time-evening .blob-2 {
+  background: linear-gradient(135deg, #000000, #32ade6);
 }
 
 /* ========================================= */
@@ -206,6 +239,8 @@ h3 {
   box-shadow: var(--shadow-md);
   padding: 1.5rem;
   transition: all var(--transition-normal);
+  transform: translateZ(0);
+  will-change: transform, opacity;
 }
 
 /* Buttons and Inputs */

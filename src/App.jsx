@@ -57,11 +57,20 @@ function AppContent() {
     setTimeout(() => setToast(prev => ({ ...prev, visible: false })), 3500);
   }, []);
 
-  // Theme Init
+  // Theme & Time Init
   useEffect(() => {
+    // 1. System Dark Mode
     const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     setDarkMode(isDark);
     if (isDark) document.documentElement.classList.add('dark-mode');
+
+    // 2. Time-Based Background 
+    const hour = new Date().getHours();
+    let timeClass = 'time-evening';
+    if (hour >= 5 && hour < 12) timeClass = 'time-morning';
+    else if (hour >= 12 && hour < 18) timeClass = 'time-afternoon';
+
+    document.body.classList.add(timeClass);
   }, []);
 
   const toggleTheme = () => {
