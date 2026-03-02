@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useI18n } from '../context/I18nContext';
 
 const PlusIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="M12 5v14" /></svg>;
+const MicIcon = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" x2="12" y1="19" y2="22" /></svg>;
+const MicOffIcon = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="2" x2="22" y1="2" y2="22" /><path d="M18.89 13.23A7.12 7.12 0 0 0 19 12v-2" /><path d="M5 10v2a7 7 0 0 0 12 5l-1.5-1.5a5 5 0 0 1-9-5v-2" /><path d="M12 19v3" /><path d="M12 2a3 3 0 0 1 3 3v2l-6 6v-3a3 3 0 0 1 3-3z" /></svg>;
 
 const CATEGORIES = [
   { id: 'health', color: 'var(--tag-health)' },
@@ -12,8 +14,10 @@ const CATEGORIES = [
 ];
 
 export default function TaskInputModal({ onAdd, onCancel, taskToEdit }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const isEditing = !!taskToEdit;
+
+  const [isListening, setIsListening] = useState(false);
 
   const [title, setTitle] = useState(taskToEdit?.title || '');
   const [category, setCategory] = useState(taskToEdit?.category || 'other');
@@ -27,6 +31,30 @@ export default function TaskInputModal({ onAdd, onCancel, taskToEdit }) {
     }
   };
 
+  const handleVoiceInput = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('Tu navegador actual no soporta dictado por voz natively.');
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = lang === 'en' ? 'en-US' : lang === 'fr' ? 'fr-FR' : lang === 'de' ? 'de-DE' : 'es-ES';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setTitle(prev => prev ? prev + ' ' + transcript : transcript);
+    };
+    recognition.onerror = () => setIsListening(false);
+    recognition.onend = () => setIsListening(false);
+
+    if (isListening) return; // Wait until it naturally stops if already listening
+    recognition.start();
+  };
+
   return (
     <div className="modal-overlay">
       <div className="modal-content glass-panel">
@@ -34,14 +62,25 @@ export default function TaskInputModal({ onAdd, onCancel, taskToEdit }) {
         <h3 className="modal-title">{t('newTask')}</h3>
 
         <form onSubmit={handleSubmit} className="task-form">
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder={t('whatNext')}
-            className="clean-input input-large"
-            autoFocus
-          />
+          <div style={{ position: 'relative' }}>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder={isListening ? 'Escuchando...' : t('whatNext')}
+              className="clean-input input-large"
+              style={{ paddingRight: '50px' }}
+              autoFocus
+            />
+            <button
+              type="button"
+              onClick={handleVoiceInput}
+              className={`mic-btn ${isListening ? 'listening' : ''}`}
+              aria-label="Voice Dictate"
+            >
+              {isListening ? <MicIcon /> : <MicIcon />}
+            </button>
+          </div>
 
           <div className="input-group">
             <label>{t('dateOptional')}</label>
@@ -125,46 +164,38 @@ export default function TaskInputModal({ onAdd, onCancel, taskToEdit }) {
         .input-large {
           width: 100%;
           font-size: 1.25rem;
-          padding: 0.75rem 0.5rem;
-          border-bottom: 2px solid var(--glass-border);
-          border-radius: 8px 8px 0 0;
-          background: rgba(0, 0, 0, 0.03); /* Light Mode High Contrast */
+          background: rgba(255, 255, 255, 0.15);
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          border-radius: 12px;
+          padding: 12px;
+          color: var(--text-primary);
           transition: all var(--transition-fast);
         }
         :root.dark-mode .input-large {
-           background: rgba(255, 255, 255, 0.1);
-           border: 1px solid rgba(255, 255, 255, 0.2);
-           color: #fff;
+           color-scheme: dark;
         }
 
-        .input-large:focus { border-bottom-color: var(--accent-color); background: rgba(0, 0, 0, 0.05); }
-        :root.dark-mode .input-large:focus { background: rgba(255, 255, 255, 0.15); }
+        .input-large:focus { border-color: var(--accent-color); background: rgba(255, 255, 255, 0.25); }
+        :root.dark-mode .input-large:focus { background: rgba(255, 255, 255, 0.25); }
 
         .input-group { display: flex; flex-direction: column; gap: 0.5rem; }
         .input-group label { font-size: 0.85rem; color: var(--text-primary); opacity: 0.9; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
         
         .datetime-input {
-          padding: 0.85rem 1rem;
+          width: 100%;
+          background: rgba(255, 255, 255, 0.15);
+          border: 1px solid rgba(255, 255, 255, 0.3);
           border-radius: 12px;
-          background-color: rgba(0, 0, 0, 0.03);
-          border: 1px solid var(--glass-border);
+          padding: 12px;
           color: var(--text-primary);
           font-family: 'Inter', sans-serif;
-          width: 100%;
         }
         :root.dark-mode .datetime-input {
-           background: rgba(255, 255, 255, 0.1);
-           border: 1px solid rgba(255, 255, 255, 0.2);
-           color: #fff;
+           color-scheme: dark;
         }
         
         .datetime-input::-webkit-calendar-picker-indicator {
-          filter: var(--calendar-icon-filter, invert(0));
           cursor: pointer;
-        }
-        
-        :root.dark-mode .datetime-input::-webkit-calendar-picker-indicator {
-          filter: invert(1);
         }
 
         .category-scroll {
@@ -208,6 +239,25 @@ export default function TaskInputModal({ onAdd, onCancel, taskToEdit }) {
           touch-action: manipulation;
         }
         .btn-add:disabled { opacity: 0.5; box-shadow: none; cursor: not-allowed; }
+
+        .mic-btn {
+           position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+           background: transparent; border: none; color: var(--text-secondary);
+           padding: 0.5rem; cursor: pointer; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+           transition: all var(--transition-fast);
+        }
+        .mic-btn:hover { color: var(--accent-color); background: rgba(255, 45, 85, 0.1); }
+        .mic-btn.listening {
+           color: var(--danger-color); 
+           background: rgba(255, 59, 48, 0.15);
+           animation: pulseMic 1.5s infinite;
+        }
+
+        @keyframes pulseMic {
+           0% { transform: translateY(-50%) scale(1); box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.4); }
+           70% { transform: translateY(-50%) scale(1.1); box-shadow: 0 0 0 10px rgba(255, 59, 48, 0); }
+           100% { transform: translateY(-50%) scale(1); box-shadow: 0 0 0 0 rgba(255, 59, 48, 0); }
+        }
       `}</style>
     </div>
   );

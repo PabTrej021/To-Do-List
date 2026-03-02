@@ -29,7 +29,7 @@ export default function CategoryCarousel({ tasks, onAddCategoryTask }) {
     <div className="category-section">
       <h3 className="section-title">Categorías</h3>
 
-      <div className="horizontal-scroll">
+      <div className="horizontal-scroll" style={{ paddingRight: '24px' }}>
         {CATEGORY_DATA.map(cat => {
           const count = getCount(cat.id);
           return (

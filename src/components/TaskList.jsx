@@ -29,9 +29,13 @@ export default function TaskList({ tasks, onToggle, onDelete, onEdit }) {
         );
     }
 
+    const pendingTasks = tasks.filter(t => !t.completed);
+    const completedTasks = tasks.filter(t => t.completed);
+
     return (
         <div className="task-list">
-            {tasks.map((task) => (
+            <h4 style={{ marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tareas de Hoy</h4>
+            {pendingTasks.map((task) => (
                 <TaskItem
                     key={task.id}
                     task={task}
@@ -40,6 +44,23 @@ export default function TaskList({ tasks, onToggle, onDelete, onEdit }) {
                     onEdit={onEdit}
                 />
             ))}
+
+            {completedTasks.length > 0 && (
+                <>
+                    <h4 style={{ marginTop: '2rem', marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Completadas</h4>
+                    <div style={{ opacity: 0.6 }}>
+                        {completedTasks.map((task) => (
+                            <TaskItem
+                                key={task.id}
+                                task={task}
+                                onToggle={onToggle}
+                                onDelete={onDelete}
+                                onEdit={onEdit}
+                            />
+                        ))}
+                    </div>
+                </>
+            )}
         </div>
     );
 }

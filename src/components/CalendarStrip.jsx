@@ -38,7 +38,7 @@ export default function CalendarStrip({ onSelectDate }) {
 
   return (
     <div className="calendar-section">
-      <div className="horizontal-scroll" style={{ padding: '10px 5px 0.5rem 5px' }}>
+      <div className="horizontal-scroll" style={{ padding: '10px 24px 0.5rem 5px' }}>
         {days.map((day, idx) => {
           const isActive = day.fullDateStr === activeDateStr;
           return (

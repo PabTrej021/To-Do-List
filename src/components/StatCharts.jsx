@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 const CheckCircleIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" color="var(--success-color)"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><path d="m9 11 3 3L22 4" /></svg>;
 const ClockIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" color="var(--accent-color)"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>;
@@ -9,7 +9,6 @@ export default function StatCharts({ tasks }) {
     const pending = total - completed;
     const progressPercent = total === 0 ? 0 : Math.round((completed / total) * 100);
 
-    // Generamos algo de data estática para el Bar Chart de CSS  
     const weeklyData = [
         { day: 'M', value: 30 },
         { day: 'T', value: 50 },
@@ -19,6 +18,15 @@ export default function StatCharts({ tasks }) {
         { day: 'S', value: 20 },
         { day: 'S', value: 10 },
     ];
+
+    const [animatedBars, setAnimatedBars] = useState(weeklyData.map(() => 0));
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setAnimatedBars(weeklyData.map(d => d.value));
+        }, 100);
+        return () => clearTimeout(timer);
+    }, []);
 
     return (
         <div className="stats-container">
@@ -53,7 +61,7 @@ export default function StatCharts({ tasks }) {
                             <div style={{ height: '100px', width: '100%', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
                                 <div
                                     className={`css-bar ${i === 2 ? 'active' : ''}`}
-                                    style={{ height: `${d.value}%`, width: '16px', borderRadius: '4px' }}
+                                    style={{ height: `${animatedBars[i]}%`, width: '16px', borderRadius: '4px', transition: 'height 1s cubic-bezier(0.25, 1, 0.5, 1)' }}
                                 ></div>
                             </div>
                             <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>{d.day}</span>

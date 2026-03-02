@@ -14,11 +14,19 @@ const languages = [
   { code: 'de', label: 'Deutsch' }
 ];
 
-export default function Header({ userName, session, handleSignOut, toggleTheme, darkMode, onToast }) {
+export default function Header({ userName, session, handleSignOut, toggleTheme, darkMode, onToast, xp }) {
   const { lang, setLang, t } = useI18n();
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const dropdownRef = useRef(null);
+
+  const getAvatarTitle = (pts) => {
+    if (!pts || pts < 100) return 'Novato';
+    if (pts < 300) return 'Estudiante de Ingeniería';
+    if (pts < 1000) return 'Ingeniero Junior';
+    if (pts < 5000) return 'Ingeniero Senior';
+    return 'Líder Técnico';
+  };
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -41,6 +49,9 @@ export default function Header({ userName, session, handleSignOut, toggleTheme, 
       <header className="app-header">
         <div className="header-greeting">
           <p className="greeting-text">{t('hello')}, {userName}</p>
+          <p style={{ fontSize: '0.75rem', color: 'var(--accent-color)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.3rem' }}>
+            {getAvatarTitle(xp)} ✦ {xp || 0} XP
+          </p>
           <h1 className="header-title">{t('yourTasks')}</h1>
         </div>
 

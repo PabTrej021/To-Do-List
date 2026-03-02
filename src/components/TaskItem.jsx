@@ -1,9 +1,10 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 const CheckIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className="check-svg"><path d="M20 6 9 17l-5-5" /></svg>;
 const TrashIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>;
 const CheckCircleIcon = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" /></svg>;
 const PencilIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /><path d="m15 5 4 4" /></svg>;
+const TimerIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>;
 
 // Base64 short pop sound for completion
 const POP_SOUND = "data:audio/mp3;base64,//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq";
@@ -12,10 +13,28 @@ export default function TaskItem({ task, onToggle, onDelete, onEdit }) {
   const [isSwiping, setIsSwiping] = useState(false);
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [tilt, setTilt] = useState({ x: 0, y: 0 }); // 3D Tilt Effect
 
   const touchStartRef = useRef(null);
   const itemRef = useRef(null);
   const audioRef = useRef(typeof Audio !== "undefined" ? new Audio(POP_SOUND) : null);
+
+  // Pomodoro local state
+  const [showPomodoro, setShowPomodoro] = useState(false);
+  const [pomodoroTime, setPomodoroTime] = useState(25 * 60);
+  const [isPomodoroRunning, setIsPomodoroRunning] = useState(false);
+
+  useEffect(() => {
+    let interval = null;
+    if (isPomodoroRunning && pomodoroTime > 0) {
+      interval = setInterval(() => setPomodoroTime(prev => prev - 1), 1000);
+    } else if (pomodoroTime === 0 && isPomodoroRunning) {
+      setIsPomodoroRunning(false);
+      triggerHaptic([100, 100, 100, 100]); // intense success buzz
+      playSound();
+    }
+    return () => clearInterval(interval);
+  }, [isPomodoroRunning, pomodoroTime]);
 
   const SWIPE_LEFT_THRESHOLD = -80;
   const SWIPE_RIGHT_THRESHOLD = 80;
@@ -109,12 +128,16 @@ export default function TaskItem({ task, onToggle, onDelete, onEdit }) {
       <div
         className={`task-card glass-panel ${task.completed ? 'completed' : ''} ${tagClass}`}
         style={{
-          transform: `translateX(${swipeOffset}px)`,
-          transition: isSwiping ? 'none' : 'transform var(--transition-normal)'
+          transform: `translateX(${swipeOffset}px) perspective(1000px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
+          transition: isSwiping ? 'none' : 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)'
         }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+        draggable={true}
+        onDragStart={handleDragStart}
       >
         <button className="task-checkbox" onClick={handleToggle}>
           {task.completed && <CheckIcon />}
@@ -130,6 +153,9 @@ export default function TaskItem({ task, onToggle, onDelete, onEdit }) {
                   {priority.charAt(0).toUpperCase() + priority.slice(1)}
                 </span>
               )}
+              <button className="edit-btn" onClick={() => setShowPomodoro(!showPomodoro)} aria-label="Pomodoro">
+                <TimerIcon />
+              </button>
               <button className="edit-btn" onClick={() => onEdit(task)} aria-label="Editar tarea">
                 <PencilIcon />
               </button>
@@ -137,6 +163,24 @@ export default function TaskItem({ task, onToggle, onDelete, onEdit }) {
           </div>
 
           <p className="task-description">{task.description}</p>
+
+          {/* Pomodoro Timer Feature */}
+          {showPomodoro && (
+            <div style={{ marginTop: '0.2rem', marginBottom: '1rem', background: 'rgba(0,0,0,0.03)', padding: '0.75rem', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid var(--glass-border)' }}>
+              <span style={{ fontWeight: 800, color: isPomodoroRunning ? 'var(--accent-color)' : 'var(--text-secondary)', fontFamily: 'monospace', fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                {isPomodoroRunning && <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--accent-color)', animation: 'pulseMic 1s infinite' }}></span>}
+                {Math.floor(pomodoroTime / 60).toString().padStart(2, '0')}:{(pomodoroTime % 60).toString().padStart(2, '0')}
+              </span>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button onClick={() => setIsPomodoroRunning(!isPomodoroRunning)} style={{ background: isPomodoroRunning ? 'var(--glass-bg)' : 'var(--accent-color)', padding: '0.4rem 0.8rem', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 600, color: isPomodoroRunning ? 'var(--text-primary)' : 'white', border: isPomodoroRunning ? '1px solid var(--glass-border)' : 'none', cursor: 'pointer' }}>
+                  {isPomodoroRunning ? 'Pausar' : 'Iniciar'}
+                </button>
+                <button onClick={() => { setIsPomodoroRunning(false); setPomodoroTime(25 * 60); }} style={{ background: 'transparent', padding: '0.4rem 0.8rem', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                  Reset
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Inline Progress Bar */}
           <div className="task-progress-track">
