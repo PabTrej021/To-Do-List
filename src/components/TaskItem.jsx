@@ -134,10 +134,6 @@ export default function TaskItem({ task, onToggle, onDelete, onEdit }) {
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-        draggable={true}
-        onDragStart={handleDragStart}
       >
         <button className="task-checkbox" onClick={handleToggle}>
           {task.completed && <CheckIcon />}
