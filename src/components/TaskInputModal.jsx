@@ -168,15 +168,14 @@ export default function TaskInputModal({ onAdd, onCancel, taskToEdit }) {
           border: 1px solid rgba(255, 255, 255, 0.3);
           border-radius: 12px;
           padding: 12px;
-          color: var(--text-primary);
+          color: white;
+          color-scheme: dark;
           transition: all var(--transition-fast);
         }
-        :root.dark-mode .input-large {
-           color-scheme: dark;
+        .input-large::placeholder {
+          color: rgba(255, 255, 255, 0.5);
         }
-
-        .input-large:focus { border-color: var(--accent-color); background: rgba(255, 255, 255, 0.25); }
-        :root.dark-mode .input-large:focus { background: rgba(255, 255, 255, 0.25); }
+        .input-large:focus { border-color: var(--accent-color); background: rgba(255, 255, 255, 0.25); outline: none; }
 
         .input-group { display: flex; flex-direction: column; gap: 0.5rem; }
         .input-group label { font-size: 0.85rem; color: var(--text-primary); opacity: 0.9; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
@@ -187,11 +186,9 @@ export default function TaskInputModal({ onAdd, onCancel, taskToEdit }) {
           border: 1px solid rgba(255, 255, 255, 0.3);
           border-radius: 12px;
           padding: 12px;
-          color: var(--text-primary);
+          color: white;
+          color-scheme: dark;
           font-family: 'Inter', sans-serif;
-        }
-        :root.dark-mode .datetime-input {
-           color-scheme: dark;
         }
         
         .datetime-input::-webkit-calendar-picker-indicator {

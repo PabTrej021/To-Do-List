@@ -318,7 +318,9 @@ function AppContent() {
                   />
                 </div>
 
-                <CategoryCarousel tasks={mappedTasks} onAddCategoryTask={(catId) => setShowTaskModal(true)} />
+                <div style={{ paddingRight: '20px', overflowX: 'auto', marginBottom: '1.5rem' }}>
+                  <CategoryCarousel tasks={mappedTasks} onAddCategoryTask={(catId) => setShowTaskModal(true)} />
+                </div>
 
                 {/* Horizontal Filter Pills */}
                 <div className="horizontal-scroll" style={{ paddingBottom: '0.25rem', marginBottom: '1.5rem' }}>
@@ -342,7 +344,9 @@ function AppContent() {
                   </button>
                 </div>
 
-                <CalendarStrip onSelectDate={(date) => setSelectedDate(date)} />
+                <div style={{ paddingRight: '20px', overflowX: 'auto', marginBottom: '1.5rem' }}>
+                  <CalendarStrip onSelectDate={(date) => setSelectedDate(date)} />
+                </div>
 
                 <h3 className="text-title" style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>{t('todaysTasks')}</h3>
                 {tasks.length === 0 && !loading && (
@@ -353,7 +357,23 @@ function AppContent() {
                     </button>
                   </div>
                 )}
-                <TaskList tasks={filteredTasks} onToggle={(id, c) => toggleTask(id, c, triggerConfetti)} onDelete={deleteTask} onEdit={handleEditTask} />
+                {(() => {
+                  const pending = filteredTasks.filter(t => !t.completed);
+                  const completed = filteredTasks.filter(t => t.completed);
+                  return (
+                    <>
+                      <TaskList tasks={pending} onToggle={(id, c) => toggleTask(id, c, triggerConfetti)} onDelete={deleteTask} onEdit={handleEditTask} />
+                      {completed.length > 0 && (
+                        <div style={{ marginTop: '2rem' }}>
+                          <h3 className="text-title" style={{ fontSize: '1.1rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>Completadas</h3>
+                          <div style={{ opacity: 0.6 }}>
+                            <TaskList tasks={completed} onToggle={(id, c) => toggleTask(id, c, triggerConfetti)} onDelete={deleteTask} onEdit={handleEditTask} />
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </>
             ) : currentView === 'calendar' ? (
               <FullCalendar tasks={mappedTasks} selectedDate={selectedDate} onSelectDate={(d) => { setSelectedDate(d); setCurrentView('home'); }} />
