@@ -101,7 +101,7 @@ export default function TaskItem({ task, onToggle, onDelete, onEdit }) {
   const tagClass = `tag-${task.category ? task.category.toLowerCase() : 'other'}`;
 
   // Randomize priority if not set (Mock logic for priority badges depending roughly on title length, just to show UI)
-  const priority = task.priority || (task.title.length > 20 ? 'high' : task.title.length > 10 ? 'medium' : 'low');
+  const priority = task.priority || (task.title?.length > 20 ? 'high' : task.title?.length > 10 ? 'medium' : 'low');
 
   // Random Progress if not set (Mock logic for UI display)
   const rawProgress = task.progress || (Math.random() * 100);

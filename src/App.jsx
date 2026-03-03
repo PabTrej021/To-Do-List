@@ -152,8 +152,8 @@ function AppContent() {
 
     if (activeTab === 'Personal') list = list.filter(t => t.category === 'home' || t.category === 'health');
     if (activeTab === 'Study') list = list.filter(t => t.category === 'study');
-    if (activeTab === 'Important') list = list.filter(t => !t.completed && (t.priority === 'high' || t.title.length > 20));
-    if (searchQuery) list = list.filter(t => t.title.toLowerCase().includes(searchQuery.toLowerCase()));
+    if (activeTab === 'Important') list = list.filter(t => !t.completed && (t.priority === 'high' || (t.title?.length > 20)));
+    if (searchQuery) list = list.filter(t => t.title?.toLowerCase().includes(searchQuery.toLowerCase()));
     return list;
   }, [mappedTasks, activeTab, searchQuery, selectedDate]);
 
