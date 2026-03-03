@@ -34,6 +34,7 @@ function saveLocalProfile(userId, data) {
 function AppContent() {
   const { t } = useI18n();
   const [session, setSession] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
   // App UI State
   const [darkMode, setDarkMode] = useState(false);
@@ -90,6 +91,7 @@ function AppContent() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session) { initGamification(session.user.id); }
+      setAuthLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -100,6 +102,7 @@ function AppContent() {
         setXp(0);
         setStreak(0);
       }
+      setAuthLoading(false);
     });
 
     return () => subscription.unsubscribe();
@@ -246,7 +249,12 @@ function AppContent() {
         </div>
       )}
 
-      {!session ? (
+      {authLoading ? (
+        <div className="auth-loader-container">
+          <div className="loader-spinner"></div>
+          <p className="loader-text">Cargando tu espacio...</p>
+        </div>
+      ) : !session ? (
         isRegistering
           ? <Register onToast={showToast} onSwitchToLogin={() => setIsRegistering(false)} toggleTheme={toggleTheme} darkMode={darkMode} />
           : <Login onToast={showToast} onSwitchToRegister={() => setIsRegistering(true)} toggleTheme={toggleTheme} darkMode={darkMode} />
@@ -390,6 +398,19 @@ function AppContent() {
       )}
 
       <style>{`
+        .auth-loader-container {
+          position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+          display: flex; flex-direction: column; align-items: center; justify-content: center;
+          background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+          z-index: 99999; gap: 1.5rem;
+        }
+        .loader-spinner {
+          width: 50px; height: 50px; border: 4px solid var(--glass-border);
+          border-top-color: var(--accent-color); border-radius: 50%;
+          animation: spin 1s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+        }
+        .loader-text { font-size: 1.25rem; color: white; font-weight: 600; letter-spacing: 0.05em; text-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+
         .pill-active { background: linear-gradient(135deg, var(--accent-color), #ff719a); color: white; border: none; box-shadow: 0 4px 15px rgba(255, 45, 85, 0.4); }
         .pill-inactive { background: var(--glass-bg); color: var(--text-secondary); border: 1px solid var(--glass-border); backdrop-filter: blur(10px); }
         .pill-inactive:hover { background: var(--bg-color-secondary); color: var(--text-primary); }
