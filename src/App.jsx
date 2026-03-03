@@ -259,7 +259,7 @@ function AppContent() {
           ? <Register onToast={showToast} onSwitchToLogin={() => setIsRegistering(false)} toggleTheme={toggleTheme} darkMode={darkMode} />
           : <Login onToast={showToast} onSwitchToRegister={() => setIsRegistering(true)} toggleTheme={toggleTheme} darkMode={darkMode} />
       ) : (
-        <>
+        <div key={session?.user?.id || 'auth-home'} style={{ display: 'contents' }}>
           <Header
             userName={userName}
             session={session}
@@ -394,7 +394,7 @@ function AppContent() {
               onCancel={() => { setShowTaskModal(false); setTaskToEdit(null); }}
             />
           )}
-        </>
+        </div>
       )}
 
       <style>{`
