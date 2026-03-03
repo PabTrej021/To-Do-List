@@ -20,7 +20,10 @@ export default function ProfileSettings({ onClose, session, onToast, handleSignO
     const [firstName, setFirstName] = useState(initialName);
     const [lastName, setLastName] = useState(initialSurname);
 
-    const displayInitials = (firstName.charAt(0) + (lastName.charAt(0) || '')).toUpperCase() || 'U';
+    const displayInitials = (
+        (firstName ? firstName.charAt(0) : '') +
+        (lastName ? lastName.charAt(0) : '')
+    ).toUpperCase() || 'U';
 
     const handleUpdateProfile = async (e) => {
         e.preventDefault();

@@ -99,7 +99,7 @@ export default function Header({ userName, session, handleSignOut, toggleTheme, 
             onClick={() => setShowProfile(true)}
             title="Ver Perfil"
           >
-            {userName?.charAt(0)?.toUpperCase()}
+            {userName ? userName.charAt(0).toUpperCase() : 'U'}
           </div>
         </div>
 
