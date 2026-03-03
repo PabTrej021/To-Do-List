@@ -157,6 +157,20 @@ function AppContent() {
   const userName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || 'User';
   const topPriorityTask = filteredTasks[0];
 
+  const loadEngineeringTemplates = async () => {
+    showToast('Cargando Plantillas...', 'Preparando tus tareas de Ingeniería.');
+    const templates = [
+      { title: 'Revisar Arquitectura del Proyecto', cat: 'work' },
+      { title: 'Estudiar Algoritmos Complejos', cat: 'study' },
+      { title: 'Completar documentación API', cat: 'work' },
+      { title: 'Pausa activa (Hidratación)', cat: 'health' }
+    ];
+    // Ejecutarlas seguidas
+    for (const t of templates) {
+      addTask(t.title, t.cat, '');
+    }
+  };
+
   const triggerConfetti = () => {
     confetti({
       particleCount: 150,
