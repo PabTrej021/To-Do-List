@@ -24,6 +24,15 @@ const HomeIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="non
 const BarChartIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20V10" /><path d="M18 20V4" /><path d="M6 20v-4" /></svg>;
 const CalendarIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>;
 
+const isSameDay = (d1, d2) => {
+  if (!d1 || !d2) return false;
+  const date1 = new Date(d1);
+  const date2 = new Date(d2);
+  return date1.getFullYear() === date2.getFullYear() &&
+    date1.getMonth() === date2.getMonth() &&
+    date1.getDate() === date2.getDate();
+};
+
 // Profile helpers (Local)
 function getLocalProfile(userId) {
   const json = localStorage.getItem(`profile_${userId}`);
@@ -115,7 +124,28 @@ function AppContent() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Global Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Ignore if user is inside an input/textarea
+      if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
 
+      if (e.key.toLowerCase() === 'n') {
+        e.preventDefault();
+        setTaskToEdit(null);
+        setModalDefaultCategory('other');
+        setShowTaskModal(true);
+      }
+      if (e.key === 'Escape') {
+        setShowTaskModal(false);
+        setShowDayModal(false);
+        setZenMode(false);
+        setTaskToEdit(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const initGamification = (userId) => {
     const profile = getLocalProfile(userId);
@@ -151,13 +181,16 @@ function AppContent() {
   const filteredTasks = useMemo(() => {
     let list = mappedTasks;
 
-    // No longer filtering by selectedDate inline
+    // Strict Date Filtering
+    list = list.filter(t => t.due_date ? isSameDay(t.due_date, selectedDate) : isSameDay(new Date(), selectedDate));
+
     if (activeTab === 'Personal') list = list.filter(t => t.category === 'home' || t.category === 'health');
     if (activeTab === 'Study') list = list.filter(t => t.category === 'study');
     if (activeTab === 'Important') list = list.filter(t => !t.completed && (t.priority === 'high' || (t.title?.length > 20)));
     if (searchQuery) list = list.filter(t => t.title?.toLowerCase().includes(searchQuery.toLowerCase()));
+
     return list;
-  }, [mappedTasks, activeTab, searchQuery]);
+  }, [mappedTasks, activeTab, searchQuery, selectedDate]);
 
   const userName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || 'User';
   const topPriorityTask = filteredTasks[0];
@@ -364,11 +397,13 @@ function AppContent() {
                 </div>
 
                 <div className="no-scrollbar" style={{ overflowX: 'auto', marginBottom: '1.5rem' }}>
-                  <CalendarStrip onSelectDate={(date) => { setModalDate(date); setShowDayModal(true); }} />
+                  <CalendarStrip selectedDate={selectedDate} onSelectDate={(date) => setSelectedDate(date)} />
                 </div>
 
                 <div style={{ padding: '0 20px' }}>
-                  <h3 className="text-title" style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>{t('todaysTasks')}</h3>
+                  <h3 className="text-title" style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>
+                    {isSameDay(selectedDate, new Date()) ? "Tareas de Hoy" : "Tareas para el " + selectedDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}
+                  </h3>
                   {tasks.length === 0 && !loading && (
                     <div style={{ textAlign: 'center', marginTop: '2rem', padding: '2rem', background: 'var(--glass-bg)', border: '1px dashed var(--glass-border)', borderRadius: '15px' }}>
                       <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontWeight: 600 }}>Tus tareas están al día. ¡Empieza tu próxima etapa!</p>
