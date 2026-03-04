@@ -268,6 +268,7 @@ function AppContent() {
             toggleTheme={toggleTheme}
             darkMode={darkMode}
             xp={xp}
+            tasks={tasks}
           />
 
           {zenMode && topPriorityTask && (

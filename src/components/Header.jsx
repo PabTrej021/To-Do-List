@@ -14,7 +14,7 @@ const languages = [
   { code: 'de', label: 'Deutsch' }
 ];
 
-export default function Header({ userName, session, handleSignOut, toggleTheme, darkMode, onToast, xp }) {
+export default function Header({ userName, session, handleSignOut, toggleTheme, darkMode, onToast, xp, tasks = [] }) {
   const { lang, setLang, t } = useI18n();
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
@@ -27,6 +27,18 @@ export default function Header({ userName, session, handleSignOut, toggleTheme, 
     if (pts < 5000) return 'Ingeniero Senior';
     return 'Líder Técnico';
   };
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour >= 6 && hour < 12) return `Buenos días, ${userName}. ¡A comerse el mundo!`;
+    if (hour >= 12 && hour < 19) return `Buenas tardes, ${userName}. Mantén el enfoque.`;
+    return `Buenas noches, ${userName}. Hora de recargar energía.`;
+  };
+
+  // Progress logic
+  const totalTasks = tasks.length;
+  const completedTasks = tasks.filter(t => t.completed).length;
+  const progressPercent = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -48,11 +60,27 @@ export default function Header({ userName, session, handleSignOut, toggleTheme, 
     <>
       <header className="app-header">
         <div className="header-greeting">
-          <p className="greeting-text">{t('hello')}, {userName}</p>
+          <p className="greeting-text" style={{ fontStyle: 'italic', fontWeight: 500, color: 'var(--text-secondary)' }}>
+            {getGreeting()}
+          </p>
           <p style={{ fontSize: '0.75rem', color: 'var(--accent-color)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.3rem' }}>
             {getAvatarTitle(xp)} ✦ {xp || 0} XP
           </p>
-          <h1 className="header-title">{t('yourTasks')}</h1>
+          <h1 className="header-title" style={{ marginTop: '0.5rem' }}>{t('yourTasks')}</h1>
+
+          {/* Daily Progress Bar */}
+          <div style={{ marginTop: '0.75rem', width: '100%', minWidth: '220px', maxWidth: '300px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', marginBottom: '4px', color: 'var(--text-secondary)', fontWeight: 600 }}>
+              <span>Progreso Diario</span>
+              <span>{completedTasks}/{totalTasks}</span>
+            </div>
+            <div style={{ width: '100%', height: '6px', backgroundColor: 'var(--glass-border)', borderRadius: '10px', overflow: 'hidden' }}>
+              <div style={{ width: `${progressPercent}%`, height: '100%', background: 'linear-gradient(90deg, var(--accent-color), #ff719a)', transition: 'width 0.8s cubic-bezier(0.25, 1, 0.5, 1)' }}></div>
+            </div>
+            {progressPercent === 100 && totalTasks > 0 && (
+              <p style={{ fontSize: '0.8rem', color: 'var(--success-color)', fontWeight: 'bold', marginTop: '6px', animation: 'fadeIn 0.5s' }}>¡Día completado! 🎉</p>
+            )}
+          </div>
         </div>
 
         <div className="header-actions">

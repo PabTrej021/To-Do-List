@@ -4,41 +4,42 @@ import { useI18n } from '../context/I18nContext';
 const SendIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>;
 
 export default function QuickAdd({ onAdd }) {
-    const { t } = useI18n();
-    const [title, setTitle] = useState('');
+  const { t } = useI18n();
+  const [title, setTitle] = useState('');
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        if (title.trim()) {
-            onAdd(title.trim(), 'other', null); // Default category 'other', no due date
-            setTitle('');
-        }
-    };
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (title.trim()) {
+      onAdd(title.trim(), 'other', null); // Default category 'other', no due date
+      setTitle('');
+    }
+  };
 
-    return (
-        <div className="quick-add-container glass-panel">
-            <form onSubmit={handleSubmit} className="quick-add-form">
-                <input
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder={t('quickAddPlaceholder')}
-                    className="quick-add-input"
-                />
-                <button
-                    type="submit"
-                    disabled={!title.trim()}
-                    className="quick-add-btn"
-                    aria-label={t('add')}
-                >
-                    <SendIcon />
-                </button>
-            </form>
+  return (
+    <div className="quick-add-container glass-panel">
+      <form onSubmit={handleSubmit} className="quick-add-form">
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder={t('quickAddPlaceholder')}
+          className="quick-add-input"
+        />
+        <button
+          type="submit"
+          disabled={!title.trim()}
+          className="quick-add-btn"
+          aria-label={t('add')}
+        >
+          <SendIcon />
+        </button>
+      </form>
 
-            <style>{`
+      <style>{`
         .quick-add-container {
           position: fixed;
           bottom: 5.5rem; /* Above the bottom navigation */
+          margin-bottom: 20px;
           left: 50%;
           transform: translateX(-50%);
           width: 90%;
@@ -92,6 +93,6 @@ export default function QuickAdd({ onAdd }) {
           opacity: 0.5;
         }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 }
