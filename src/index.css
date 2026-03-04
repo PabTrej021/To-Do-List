@@ -446,13 +446,18 @@ input {
 .horizontal-scroll {
   display: flex;
   overflow-x: auto;
+  gap: 16px;
+  /* Replacing margins with flex gaps */
   scroll-behavior: smooth;
   scroll-snap-type: x mandatory;
-  padding-bottom: 1rem;
-  margin-left: -1rem;
-  padding-left: 1rem;
-  margin-right: -1rem;
-  padding-right: 1rem;
+}
+
+/* Force End-Padding Trick for Box-Shadows */
+.horizontal-scroll::after {
+  content: "";
+  display: block;
+  min-width: 20px;
+  height: 1px;
 }
 
 .horizontal-scroll::-webkit-scrollbar {
@@ -654,18 +659,6 @@ input {
   color: var(--text-primary);
 }
 
-/* Utility to hide scrollbar */
-.no-scrollbar {
-  -ms-overflow-style: none;
-  /* IE and Edge */
-  scrollbar-width: none;
-  /* Firefox */
-}
-
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-  /* Chrome, Safari, Opera */
-}
 
 /* Removed duplicate .main-content */
 

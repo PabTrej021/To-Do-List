@@ -26,7 +26,8 @@ export default function TaskInputModal({ onAdd, onCancel, taskToEdit }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (title.trim()) {
-      onAdd(title.trim(), category, dueDate, isEditing ? taskToEdit.id : null);
+      const formattedDate = dueDate ? new Date(dueDate).toISOString() : null;
+      onAdd(title.trim(), category, formattedDate, isEditing ? taskToEdit.id : null);
       setTitle('');
     }
   };

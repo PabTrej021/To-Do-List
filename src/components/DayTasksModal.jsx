@@ -1,10 +1,18 @@
 import React from 'react';
 import TaskItem from './TaskItem';
 
+const isSameDay = (dateString1, dateString2) => {
+    if (!dateString1 || !dateString2) return false;
+    const d1 = new Date(dateString1);
+    const d2 = new Date(dateString2);
+    return d1.getFullYear() === d2.getFullYear() &&
+        d1.getMonth() === d2.getMonth() &&
+        d1.getDate() === d2.getDate();
+};
+
 export default function DayTasksModal({ tasks, selectedDate, onClose, onToggle, onDelete, onEdit }) {
-    // Filter tasks that belong exclusively to the selected date
-    const selectedDateStr = selectedDate ? selectedDate.toISOString().split('T')[0] : '';
-    const dayTasks = tasks.filter(t => t.due_date && t.due_date.startsWith(selectedDateStr));
+    // Filter tasks that belong exclusively to the selected date using robust Date comparison
+    const dayTasks = tasks.filter(t => t.due_date && isSameDay(t.due_date, selectedDate));
 
     return (
         <div className="modal-overlay" onClick={onClose}>
