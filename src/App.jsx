@@ -45,6 +45,7 @@ function AppContent() {
   const [currentView, setCurrentView] = useState('home');
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState(null);
+  const [modalDefaultCategory, setModalDefaultCategory] = useState('other');
   const [isDragActive, setIsDragActive] = useState(false);
   const [zenMode, setZenMode] = useState(false);
 
@@ -337,7 +338,7 @@ function AppContent() {
                 </div>
 
                 <div className="no-scrollbar" style={{ overflowX: 'auto', marginBottom: '1.5rem' }}>
-                  <CategoryCarousel tasks={mappedTasks} onAddCategoryTask={(catId) => setShowTaskModal(true)} />
+                  <CategoryCarousel tasks={mappedTasks} onAddCategoryTask={(catId) => { setModalDefaultCategory(catId); setShowTaskModal(true); }} />
                 </div>
 
                 {/* Horizontal Filter Pills */}
@@ -406,7 +407,7 @@ function AppContent() {
 
           {/* FAB for Modals */}
           <div className="fab-container">
-            <button className="fab-button" onClick={() => { setTaskToEdit(null); setShowTaskModal(true); }}>
+            <button className="fab-button" onClick={() => { setTaskToEdit(null); setModalDefaultCategory('other'); setShowTaskModal(true); }}>
               <PlusIcon />
             </button>
           </div>
@@ -427,6 +428,7 @@ function AppContent() {
           {showTaskModal && (
             <TaskInputModal
               taskToEdit={taskToEdit}
+              defaultCategory={modalDefaultCategory}
               onAdd={(title, cat, due) => { addTask(title, cat, due, taskToEdit?.id); setShowTaskModal(false); }}
               onCancel={() => { setShowTaskModal(false); setTaskToEdit(null); }}
             />

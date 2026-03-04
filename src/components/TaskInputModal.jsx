@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useI18n } from '../context/I18nContext';
 
 const PlusIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="M12 5v14" /></svg>;
@@ -13,15 +13,21 @@ const CATEGORIES = [
   { id: 'other', color: 'var(--text-secondary)' }
 ];
 
-export default function TaskInputModal({ onAdd, onCancel, taskToEdit }) {
+export default function TaskInputModal({ onAdd, onCancel, taskToEdit, defaultCategory }) {
   const { t, lang } = useI18n();
   const isEditing = !!taskToEdit;
 
   const [isListening, setIsListening] = useState(false);
 
   const [title, setTitle] = useState(taskToEdit?.title || '');
-  const [category, setCategory] = useState(taskToEdit?.category || 'other');
+  const [category, setCategory] = useState(taskToEdit?.category || defaultCategory || 'other');
   const [dueDate, setDueDate] = useState(taskToEdit?.due_date ? taskToEdit.due_date.slice(0, 16) : '');
+
+  useEffect(() => {
+    if (!isEditing && defaultCategory) {
+      setCategory(defaultCategory);
+    }
+  }, [defaultCategory, isEditing]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
