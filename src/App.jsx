@@ -7,6 +7,7 @@ import { useTasks } from './hooks/useTasks';
 import Login from './components/Login';
 import Register from './components/Register';
 import TaskList from './components/TaskList';
+import TaskItem from './components/TaskItem';
 import CategoryCarousel from './components/CategoryCarousel';
 import CalendarStrip from './components/CalendarStrip';
 import FullCalendar from './components/FullCalendar';
