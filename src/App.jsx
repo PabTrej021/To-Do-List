@@ -178,11 +178,12 @@ function AppContent() {
     category: t.category || (t.description?.includes('Categoria:') ? t.description.split(': ')[1] : 'other')
   })), [tasks]);
 
-  const filteredTasks = useMemo(() => {
-    let list = mappedTasks;
+  const dateFilteredTasks = useMemo(() => {
+    return mappedTasks.filter(t => t.due_date ? isSameDay(t.due_date, selectedDate) : isSameDay(new Date(), selectedDate));
+  }, [mappedTasks, selectedDate]);
 
-    // Strict Date Filtering
-    list = list.filter(t => t.due_date ? isSameDay(t.due_date, selectedDate) : isSameDay(new Date(), selectedDate));
+  const filteredTasks = useMemo(() => {
+    let list = dateFilteredTasks;
 
     if (activeTab === 'Personal') list = list.filter(t => t.category === 'home' || t.category === 'health');
     if (activeTab === 'Study') list = list.filter(t => t.category === 'study');
@@ -190,7 +191,7 @@ function AppContent() {
     if (searchQuery) list = list.filter(t => t.title?.toLowerCase().includes(searchQuery.toLowerCase()));
 
     return list;
-  }, [mappedTasks, activeTab, searchQuery, selectedDate]);
+  }, [dateFilteredTasks, activeTab, searchQuery]);
 
   const userName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || 'User';
   const topPriorityTask = filteredTasks[0];
@@ -371,7 +372,7 @@ function AppContent() {
                 </div>
 
                 <div className="no-scrollbar" style={{ overflowX: 'auto', marginBottom: '1.5rem' }}>
-                  <CategoryCarousel tasks={mappedTasks} onAddCategoryTask={(catId) => { setModalDefaultCategory(catId); setShowTaskModal(true); }} />
+                  <CategoryCarousel tasks={dateFilteredTasks} onAddCategoryTask={(catId) => { setModalDefaultCategory(catId); setShowTaskModal(true); }} />
                 </div>
 
                 {/* Horizontal Filter Pills */}
