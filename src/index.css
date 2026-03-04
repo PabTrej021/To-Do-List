@@ -59,6 +59,24 @@
 }
 
 /* Base Interactions */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.main-content {
+  padding: 1.5rem;
+  padding-bottom: 140px;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* Base Interactions */
 button,
 a,
 input[type="submit"],
@@ -634,6 +652,122 @@ input {
 
 .close-btn:hover {
   color: var(--text-primary);
+}
+
+/* Utility to hide scrollbar */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+  /* Chrome, Safari, Opera */
+}
+
+/* Removed duplicate .main-content */
+
+.task-card {
+  transition: all 0.3s ease;
+}
+
+.task-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(255, 45, 85, 0.4);
+}
+
+.task-card:active {
+  cursor: grabbing;
+}
+
+/* --- Responsive Navigation Layouts --- */
+
+/* Mobile Dock (Hidden on Desktop) */
+.bottom-nav-dock {
+  position: fixed;
+  bottom: 20px;
+  left: 5%;
+  width: 90%;
+  max-width: 800px;
+  z-index: 90;
+  border-radius: 20px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  display: flex;
+  justify-content: space-around;
+  padding: 0.75rem;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-md);
+  transition: all 0.3s ease;
+}
+
+.bottom-nav-dock .nav-item {
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+  padding: 0.5rem;
+  cursor: pointer;
+}
+
+.bottom-nav-dock .nav-item:active {
+  transform: scale(0.9);
+}
+
+/* Desktop Header-attached Nav (Hidden on Mobile) */
+.desktop-nav {
+  display: none;
+}
+
+/* Desktop Overrides */
+@media (min-width: 1024px) {
+  .desktop-nav {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+    width: 100%;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .desktop-nav button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.25rem;
+    border-radius: 30px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    color: var(--text-secondary);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+
+  .desktop-nav button:hover {
+    background: var(--bg-color-secondary);
+    color: var(--text-primary);
+  }
+
+  .desktop-nav button.active {
+    color: var(--accent-color);
+    background: rgba(255, 45, 85, 0.1);
+    border-color: var(--accent-color);
+  }
+
+  .bottom-nav-dock {
+    display: none !important;
+  }
+
+  .main-content {
+    padding-bottom: 2rem;
+  }
 }
 
 .btn-secondary {

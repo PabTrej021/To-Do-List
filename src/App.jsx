@@ -304,7 +304,23 @@ function AppContent() {
             </div>
           )}
 
-          <main style={{ paddingBottom: '7rem' }}>
+          {/* Desktop Navigation Bar (Only visible on wide screens) */}
+          <div className="desktop-nav">
+            <button onClick={() => setCurrentView('home')} className={currentView === 'home' ? 'active' : ''}>
+              <HomeIcon /> Inicio
+            </button>
+            <button onClick={() => setCurrentView('calendar')} className={currentView === 'calendar' ? 'active' : ''}>
+              <CalendarIcon /> Calendario
+            </button>
+            <button onClick={() => setCurrentView('stats')} className={currentView === 'stats' ? 'active' : ''}>
+              <BarChartIcon /> Estadísticas
+            </button>
+          </div>
+
+          <main className="main-content">
+            {/* Quick Add dynamically flows on Desktop, fixed on Mobile */}
+            <QuickAdd onAdd={(title, cat, due) => addTask(title, cat, due)} />
+
             {currentView === 'home' ? (
               <>
                 {/* Search Bar */}
@@ -320,7 +336,7 @@ function AppContent() {
                   />
                 </div>
 
-                <div style={{ paddingRight: '20px', overflowX: 'auto', marginBottom: '1.5rem' }}>
+                <div className="no-scrollbar" style={{ paddingRight: '20px', overflowX: 'auto', marginBottom: '1.5rem' }}>
                   <CategoryCarousel tasks={mappedTasks} onAddCategoryTask={(catId) => setShowTaskModal(true)} />
                 </div>
 
@@ -346,7 +362,7 @@ function AppContent() {
                   </button>
                 </div>
 
-                <div style={{ paddingRight: '20px', overflowX: 'auto', marginBottom: '1.5rem' }}>
+                <div className="no-scrollbar" style={{ paddingRight: '20px', overflowX: 'auto', marginBottom: '1.5rem' }}>
                   <CalendarStrip onSelectDate={(date) => setSelectedDate(date)} />
                 </div>
 
@@ -384,8 +400,7 @@ function AppContent() {
             )}
           </main>
 
-          {/* Quick Add Bar (Global bottom pinned) */}
-          <QuickAdd onAdd={(title, cat, due) => addTask(title, cat, due)} />
+
 
           {/* FAB for Modals */}
           <div className="fab-container">
@@ -394,20 +409,18 @@ function AppContent() {
             </button>
           </div>
 
-          {/* Bottom Navigation */}
-          <div style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: '800px', padding: '1rem', zIndex: 90 }}>
-            <div className="glass-panel" style={{ display: 'flex', justifyContent: 'space-around', padding: '0.75rem', borderRadius: '30px', gap: '1rem' }}>
-              <button onClick={() => setCurrentView('home')} style={{ color: currentView === 'home' ? 'var(--accent-color)' : 'var(--text-secondary)' }}>
-                <HomeIcon />
-              </button>
-              <button onClick={() => setCurrentView('calendar')} style={{ color: currentView === 'calendar' ? 'var(--accent-color)' : 'var(--text-secondary)' }}>
-                <CalendarIcon />
-              </button>
-              <button onClick={() => setCurrentView('stats')} style={{ color: currentView === 'stats' ? 'var(--accent-color)' : 'var(--text-secondary)' }}>
-                <BarChartIcon />
-              </button>
-            </div>
-          </div>
+          {/* Mobile Bottom Navigation Dock */}
+          <nav className="bottom-nav-dock">
+            <button className="nav-item" onClick={() => setCurrentView('home')} style={{ color: currentView === 'home' ? 'var(--accent-color)' : 'var(--text-secondary)' }}>
+              <HomeIcon />
+            </button>
+            <button className="nav-item" onClick={() => setCurrentView('calendar')} style={{ color: currentView === 'calendar' ? 'var(--accent-color)' : 'var(--text-secondary)' }}>
+              <CalendarIcon />
+            </button>
+            <button className="nav-item" onClick={() => setCurrentView('stats')} style={{ color: currentView === 'stats' ? 'var(--accent-color)' : 'var(--text-secondary)' }}>
+              <BarChartIcon />
+            </button>
+          </nav>
 
           {showTaskModal && (
             <TaskInputModal

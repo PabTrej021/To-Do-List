@@ -92,6 +92,18 @@ export default function QuickAdd({ onAdd }) {
           color: var(--text-secondary);
           opacity: 0.5;
         }
+
+        /* Desktop Override: Snaps back into the regular DOM flow */
+        @media (min-width: 1024px) {
+          .quick-add-container {
+            position: relative;
+            bottom: auto;
+            left: auto;
+            transform: none;
+            width: 100%;
+            margin: 0 auto 2rem auto;
+          }
+        }
       `}</style>
     </div>
   );
