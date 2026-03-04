@@ -16,6 +16,7 @@ import StatCharts from './components/StatCharts';
 import Header from './components/Header';
 import TaskInputModal from './components/TaskInputModal';
 import QuickAdd from './components/QuickAdd';
+import DayTasksModal from './components/DayTasksModal';
 
 const SearchIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>;
 const PlusIcon = () => <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="M12 5v14" /></svg>;
@@ -46,6 +47,10 @@ function AppContent() {
   const [taskToEdit, setTaskToEdit] = useState(null);
   const [isDragActive, setIsDragActive] = useState(false);
   const [zenMode, setZenMode] = useState(false);
+
+  // Day Modal State
+  const [showDayModal, setShowDayModal] = useState(false);
+  const [modalDate, setModalDate] = useState(null);
 
   // Dashboard Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -145,18 +150,13 @@ function AppContent() {
   const filteredTasks = useMemo(() => {
     let list = mappedTasks;
 
-    const targetDateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
-    list = list.filter(t => {
-      if (!t.due_date) return true;
-      return t.due_date.startsWith(targetDateStr);
-    });
-
+    // No longer filtering by selectedDate inline
     if (activeTab === 'Personal') list = list.filter(t => t.category === 'home' || t.category === 'health');
     if (activeTab === 'Study') list = list.filter(t => t.category === 'study');
     if (activeTab === 'Important') list = list.filter(t => !t.completed && (t.priority === 'high' || (t.title?.length > 20)));
     if (searchQuery) list = list.filter(t => t.title?.toLowerCase().includes(searchQuery.toLowerCase()));
     return list;
-  }, [mappedTasks, activeTab, searchQuery, selectedDate]);
+  }, [mappedTasks, activeTab, searchQuery]);
 
   const userName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || 'User';
   const topPriorityTask = filteredTasks[0];
@@ -324,8 +324,8 @@ function AppContent() {
             {currentView === 'home' ? (
               <>
                 {/* Search Bar */}
-                <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
-                  <div style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }}><SearchIcon /></div>
+                <div style={{ position: 'relative', marginBottom: '1.5rem', padding: '0 20px' }}>
+                  <div style={{ position: 'absolute', left: '2rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }}><SearchIcon /></div>
                   <input
                     type="text"
                     placeholder={t('searchTasks')}
@@ -336,12 +336,12 @@ function AppContent() {
                   />
                 </div>
 
-                <div className="no-scrollbar" style={{ paddingRight: '20px', overflowX: 'auto', marginBottom: '1.5rem' }}>
+                <div className="no-scrollbar" style={{ overflowX: 'auto', marginBottom: '1.5rem' }}>
                   <CategoryCarousel tasks={mappedTasks} onAddCategoryTask={(catId) => setShowTaskModal(true)} />
                 </div>
 
                 {/* Horizontal Filter Pills */}
-                <div className="horizontal-scroll" style={{ paddingBottom: '0.25rem', marginBottom: '1.5rem' }}>
+                <div className="horizontal-scroll no-scrollbar" style={{ padding: '5px 20px', marginBottom: '1.5rem' }}>
                   {['All', 'Personal', 'Study', 'Important'].map(tab => (
                     <button
                       key={tab}
@@ -362,36 +362,38 @@ function AppContent() {
                   </button>
                 </div>
 
-                <div className="no-scrollbar" style={{ paddingRight: '20px', overflowX: 'auto', marginBottom: '1.5rem' }}>
-                  <CalendarStrip onSelectDate={(date) => setSelectedDate(date)} />
+                <div className="no-scrollbar" style={{ overflowX: 'auto', marginBottom: '1.5rem' }}>
+                  <CalendarStrip onSelectDate={(date) => { setModalDate(date); setShowDayModal(true); }} />
                 </div>
 
-                <h3 className="text-title" style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>{t('todaysTasks')}</h3>
-                {tasks.length === 0 && !loading && (
-                  <div style={{ textAlign: 'center', marginTop: '2rem', padding: '2rem', background: 'var(--glass-bg)', border: '1px dashed var(--glass-border)', borderRadius: '15px' }}>
-                    <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontWeight: 600 }}>Tus tareas están al día. ¡Empieza tu próxima etapa!</p>
-                    <button onClick={loadEngineeringTemplates} className="btn-add" style={{ margin: '0 auto', fontSize: '0.9rem' }}>
-                      Cargar Prácticas Base (Ingeniería)
-                    </button>
-                  </div>
-                )}
-                {(() => {
-                  const pending = filteredTasks.filter(t => !t.completed);
-                  const completed = filteredTasks.filter(t => t.completed);
-                  return (
-                    <>
-                      <TaskList tasks={pending} onToggle={(id, c) => toggleTask(id, c, triggerConfetti)} onDelete={deleteTask} onEdit={handleEditTask} />
-                      {completed.length > 0 && (
-                        <div style={{ marginTop: '2rem' }}>
-                          <h3 className="text-title" style={{ fontSize: '1.1rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>Completadas</h3>
-                          <div style={{ opacity: 0.6 }}>
-                            <TaskList tasks={completed} onToggle={(id, c) => toggleTask(id, c, triggerConfetti)} onDelete={deleteTask} onEdit={handleEditTask} />
+                <div style={{ padding: '0 20px' }}>
+                  <h3 className="text-title" style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>{t('todaysTasks')}</h3>
+                  {tasks.length === 0 && !loading && (
+                    <div style={{ textAlign: 'center', marginTop: '2rem', padding: '2rem', background: 'var(--glass-bg)', border: '1px dashed var(--glass-border)', borderRadius: '15px' }}>
+                      <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontWeight: 600 }}>Tus tareas están al día. ¡Empieza tu próxima etapa!</p>
+                      <button onClick={loadEngineeringTemplates} className="btn-add" style={{ margin: '0 auto', fontSize: '0.9rem' }}>
+                        Cargar Prácticas Base (Ingeniería)
+                      </button>
+                    </div>
+                  )}
+                  {(() => {
+                    const pending = filteredTasks.filter(t => !t.completed);
+                    const completed = filteredTasks.filter(t => t.completed);
+                    return (
+                      <>
+                        <TaskList tasks={pending} onToggle={(id, c) => toggleTask(id, c, triggerConfetti)} onDelete={deleteTask} onEdit={handleEditTask} />
+                        {completed.length > 0 && (
+                          <div style={{ marginTop: '2rem' }}>
+                            <h3 className="text-title" style={{ fontSize: '1.1rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>Completadas</h3>
+                            <div style={{ opacity: 0.6 }}>
+                              <TaskList tasks={completed} onToggle={(id, c) => toggleTask(id, c, triggerConfetti)} onDelete={deleteTask} onEdit={handleEditTask} />
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </>
-                  );
-                })()}
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
               </>
             ) : currentView === 'calendar' ? (
               <FullCalendar tasks={mappedTasks} selectedDate={selectedDate} onSelectDate={(d) => { setSelectedDate(d); setCurrentView('home'); }} />
@@ -427,6 +429,17 @@ function AppContent() {
               taskToEdit={taskToEdit}
               onAdd={(title, cat, due) => { addTask(title, cat, due, taskToEdit?.id); setShowTaskModal(false); }}
               onCancel={() => { setShowTaskModal(false); setTaskToEdit(null); }}
+            />
+          )}
+
+          {showDayModal && (
+            <DayTasksModal
+              tasks={mappedTasks}
+              selectedDate={modalDate}
+              onClose={() => setShowDayModal(false)}
+              onToggle={(id, c) => toggleTask(id, c, triggerConfetti)}
+              onDelete={deleteTask}
+              onEdit={handleEditTask}
             />
           )}
         </div>
