@@ -36,10 +36,18 @@ const isSameDay = (d1, d2) => {
 // Profile helpers (Local)
 function getLocalProfile(userId) {
   const json = localStorage.getItem(`profile_${userId}`);
-  return json ? JSON.parse(json) : { xp: 0, streak: 0, lastLogin: new Date().toDateString() };
+  return json ? JSON.parse(json) : { xp: 0, streak: 0, lastLogin: new Date().toDateString(), lastCompletedDate: null };
 }
 function saveLocalProfile(userId, data) {
   localStorage.setItem(`profile_${userId}`, JSON.stringify(data));
+}
+
+// Level & Title System
+function getUserTitleAndLevel(xp) {
+  if (xp >= 1000) return { level: 4, title: 'Maestro del Tiempo', color: '#bf5af2', accent: 'linear-gradient(135deg, #bf5af2, #ffcc00)' };
+  if (xp >= 500) return { level: 3, title: 'Ingeniero Productivo', color: '#5e5ce6', accent: 'linear-gradient(135deg, #5e5ce6, #32ade6)' };
+  if (xp >= 200) return { level: 2, title: 'Aprendiz Disciplinado', color: '#32ade6', accent: 'linear-gradient(135deg, #32ade6, #34c759)' };
+  return { level: 1, title: 'Novato del Enfoque', color: '#8e8e93', accent: 'linear-gradient(135deg, #ff2d55, #ff719a)' };
 }
 
 function AppContent() {
@@ -154,17 +162,54 @@ function AppContent() {
       const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
       if (profile.lastLogin === yesterday.toDateString()) {
         profile.streak += 1; showToast('¡Racha Mantenida!', `Día ${profile.streak} 🔥`);
-      } else profile.streak = 1;
+      } else {
+        if (profile.streak > 1) showToast('Racha Perdida', 'Tu racha se reinició a 1 📉');
+        profile.streak = 1;
+      }
       profile.lastLogin = today;
       saveLocalProfile(userId, profile);
     }
     setXp(profile.xp); setStreak(profile.streak);
+
+    // Inject level-based CSS variables
+    const levelInfo = getUserTitleAndLevel(profile.xp);
+    document.documentElement.style.setProperty('--level-accent', levelInfo.accent);
+    document.documentElement.style.setProperty('--level-color', levelInfo.color);
   };
 
+  // Smart XP: streak-aware algorithm
   const addXp = (amount) => {
     if (!session) return;
-    const newXp = xp + amount; setXp(newXp);
-    saveLocalProfile(session.user.id, { ...getLocalProfile(session.user.id), xp: newXp });
+    const profile = getLocalProfile(session.user.id);
+    const today = new Date().toDateString();
+    const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+
+    let xpGain = amount; // Base: +10
+    let newStreak = profile.streak;
+
+    if (profile.lastCompletedDate === today) {
+      // Same day: just add base XP, no streak change
+    } else if (profile.lastCompletedDate === yesterday.toDateString()) {
+      // Consecutive day: streak bonus!
+      newStreak += 1;
+      xpGain += 20; // Bonus for keeping the streak
+      showToast('🔥 Racha +1', `${newStreak} días consecutivos (+${xpGain} XP)`);
+    } else {
+      // Streak broken
+      if (newStreak > 1) showToast('📉 Racha reiniciada', 'Empezamos de nuevo');
+      newStreak = 1;
+    }
+
+    const newXp = profile.xp + xpGain;
+    const updatedProfile = { ...profile, xp: newXp, streak: newStreak, lastCompletedDate: today };
+    saveLocalProfile(session.user.id, updatedProfile);
+    setXp(newXp);
+    setStreak(newStreak);
+
+    // Update level CSS dynamically
+    const levelInfo = getUserTitleAndLevel(newXp);
+    document.documentElement.style.setProperty('--level-accent', levelInfo.accent);
+    document.documentElement.style.setProperty('--level-color', levelInfo.color);
   };
 
   const handleEditTask = (task) => {
@@ -303,6 +348,7 @@ function AppContent() {
             toggleTheme={toggleTheme}
             darkMode={darkMode}
             xp={xp}
+            streak={streak}
             tasks={tasks}
           />
 

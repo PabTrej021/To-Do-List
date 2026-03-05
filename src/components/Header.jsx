@@ -14,19 +14,21 @@ const languages = [
   { code: 'de', label: 'Deutsch' }
 ];
 
-export default function Header({ userName, session, handleSignOut, toggleTheme, darkMode, onToast, xp, tasks = [] }) {
+// Level & Title System (shared from App.jsx logic)
+function getUserTitleAndLevel(xp) {
+  if (xp >= 1000) return { level: 4, title: 'Maestro del Tiempo', color: '#bf5af2' };
+  if (xp >= 500) return { level: 3, title: 'Ingeniero Productivo', color: '#5e5ce6' };
+  if (xp >= 200) return { level: 2, title: 'Aprendiz Disciplinado', color: '#32ade6' };
+  return { level: 1, title: 'Novato del Enfoque', color: '#8e8e93' };
+}
+
+export default function Header({ userName, session, handleSignOut, toggleTheme, darkMode, onToast, xp, streak = 0, tasks = [] }) {
   const { lang, setLang, t } = useI18n();
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const dropdownRef = useRef(null);
 
-  const getAvatarTitle = (pts) => {
-    if (!pts || pts < 100) return 'Novato';
-    if (pts < 300) return 'Estudiante de Ingeniería';
-    if (pts < 1000) return 'Ingeniero Junior';
-    if (pts < 5000) return 'Ingeniero Senior';
-    return 'Líder Técnico';
-  };
+  const levelInfo = getUserTitleAndLevel(xp || 0);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -63,8 +65,8 @@ export default function Header({ userName, session, handleSignOut, toggleTheme, 
           <p className="greeting-text" style={{ fontStyle: 'italic', fontWeight: 500, color: 'var(--text-secondary)' }}>
             {getGreeting()}
           </p>
-          <p style={{ fontSize: '0.75rem', color: 'var(--accent-color)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.3rem' }}>
-            {getAvatarTitle(xp)} ✦ {xp || 0} XP
+          <p style={{ fontSize: '0.75rem', color: levelInfo.color, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.3rem' }}>
+            Nv.{levelInfo.level} — {levelInfo.title} ✦ {xp || 0} XP
           </p>
           <h1 className="header-title" style={{ marginTop: '0.5rem' }}>{t('yourTasks')}</h1>
 
@@ -84,6 +86,11 @@ export default function Header({ userName, session, handleSignOut, toggleTheme, 
         </div>
 
         <div className="header-actions">
+          {/* Streak Badge */}
+          <div className={`streak-badge ${streak > 3 ? 'streak-hot' : streak > 0 ? 'streak-warm' : 'streak-cold'}`}>
+            <span className="streak-fire">{streak > 0 ? '🔥' : '❄️'}</span>
+            <span className="streak-count">{streak} {streak === 1 ? 'Día' : 'Días'}</span>
+          </div>
 
           {/* Custom Language Switcher Dropdown */}
           <div className="lang-container" ref={dropdownRef}>
@@ -252,6 +259,45 @@ export default function Header({ userName, session, handleSignOut, toggleTheme, 
             transition: transform var(--transition-fast);
           }
           .user-avatar:hover { transform: scale(1.05); }
+
+          /* Streak Badge */
+          .streak-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.4rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            transition: all 0.3s ease;
+          }
+          .streak-fire { font-size: 1rem; }
+          .streak-count { letter-spacing: 0.02em; }
+
+          .streak-hot {
+            background: rgba(255, 149, 0, 0.15);
+            border-color: rgba(255, 149, 0, 0.4);
+            color: #ff9500;
+            animation: streakGlow 2s infinite;
+          }
+          .streak-warm {
+            background: rgba(255, 204, 0, 0.1);
+            border-color: rgba(255, 204, 0, 0.3);
+            color: #ffcc00;
+          }
+          .streak-cold {
+            background: var(--glass-bg);
+            color: var(--text-secondary);
+          }
+
+          @keyframes streakGlow {
+            0%, 100% { box-shadow: 0 0 8px rgba(255, 149, 0, 0.2); }
+            50% { box-shadow: 0 0 18px rgba(255, 149, 0, 0.5); }
+          }
+
         `}</style>
       </header>
 
