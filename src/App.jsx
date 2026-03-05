@@ -402,51 +402,55 @@ function AppContent() {
 
           <main className="main-content">
             {currentView === 'home' ? (
-              <>
-                {/* Search Bar */}
-                <div style={{ position: 'relative', marginBottom: '1.5rem', padding: '0 20px' }}>
-                  <div style={{ position: 'absolute', left: '2rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }}><SearchIcon /></div>
-                  <input
-                    type="text"
-                    placeholder={t('searchTasks')}
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="input-field"
-                    style={{ paddingLeft: '3rem', borderRadius: '30px' }}
-                  />
-                </div>
+              <div className="app-layout-desktop">
+                {/* ===== LEFT COLUMN: SIDEBAR ===== */}
+                <div className="desktop-sidebar">
+                  {/* Search Bar */}
+                  <div style={{ position: 'relative', marginBottom: '1.5rem', padding: '0 20px' }}>
+                    <div style={{ position: 'absolute', left: '2rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }}><SearchIcon /></div>
+                    <input
+                      type="text"
+                      placeholder={t('searchTasks')}
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="input-field"
+                      style={{ paddingLeft: '3rem', borderRadius: '30px' }}
+                    />
+                  </div>
 
-                <div className="no-scrollbar" style={{ overflowX: 'auto', marginBottom: '1.5rem' }}>
-                  <CategoryCarousel tasks={mappedTasks} onAddCategoryTask={(catId) => { setModalDefaultCategory(catId); setShowTaskModal(true); }} />
-                </div>
+                  <div className="no-scrollbar" style={{ overflowX: 'auto', marginBottom: '1.5rem' }}>
+                    <CategoryCarousel tasks={mappedTasks} onAddCategoryTask={(catId) => { setModalDefaultCategory(catId); setShowTaskModal(true); }} />
+                  </div>
 
-                {/* Horizontal Filter Pills */}
-                <div className="horizontal-scroll no-scrollbar" style={{ padding: '5px 20px', marginBottom: '1.5rem' }}>
-                  {['All', 'Personal', 'Study', 'Important'].map(tab => (
+                  {/* Horizontal Filter Pills */}
+                  <div className="horizontal-scroll no-scrollbar" style={{ padding: '5px 20px', marginBottom: '1.5rem' }}>
+                    {['All', 'Personal', 'Study', 'Important'].map(tab => (
+                      <button
+                        key={tab}
+                        onClick={() => setActiveTab(tab)}
+                        className={`scroll-item ${activeTab === tab ? 'pill-active' : 'pill-inactive'}`}
+                        style={{ padding: '0.6rem 1.25rem', borderRadius: '30px', marginRight: '0.75rem', fontWeight: 600, fontSize: '0.9rem', transition: 'all var(--transition-fast)' }}
+                      >
+                        {t(tab.toLowerCase()) || tab}
+                      </button>
+                    ))}
                     <button
-                      key={tab}
-                      onClick={() => setActiveTab(tab)}
-                      className={`scroll-item ${activeTab === tab ? 'pill-active' : 'pill-inactive'}`}
-                      style={{ padding: '0.6rem 1.25rem', borderRadius: '30px', marginRight: '0.75rem', fontWeight: 600, fontSize: '0.9rem', transition: 'all var(--transition-fast)' }}
+                      onClick={() => setZenMode(true)}
+                      className="scroll-item pill-inactive"
+                      style={{ padding: '0.6rem 1.25rem', borderRadius: '30px', marginRight: '0.75rem', fontWeight: 600, fontSize: '0.9rem', transition: 'all var(--transition-fast)', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#bf5af2' }}
                     >
-                      {t(tab.toLowerCase()) || tab}
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg>
+                      Zen
                     </button>
-                  ))}
-                  <button
-                    onClick={() => setZenMode(true)}
-                    className="scroll-item pill-inactive"
-                    style={{ padding: '0.6rem 1.25rem', borderRadius: '30px', marginRight: '0.75rem', fontWeight: 600, fontSize: '0.9rem', transition: 'all var(--transition-fast)', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#bf5af2' }}
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg>
-                    Zen
-                  </button>
+                  </div>
+
+                  <div className="no-scrollbar" style={{ overflowX: 'auto', marginBottom: '1.5rem' }}>
+                    <CalendarStrip selectedDate={selectedDate} onSelectDate={(date) => setSelectedDate(date)} />
+                  </div>
                 </div>
 
-                <div className="no-scrollbar" style={{ overflowX: 'auto', marginBottom: '1.5rem' }}>
-                  <CalendarStrip selectedDate={selectedDate} onSelectDate={(date) => setSelectedDate(date)} />
-                </div>
-
-                <div style={{ padding: '0 20px' }}>
+                {/* ===== RIGHT COLUMN: TASK LIST ===== */}
+                <div className="desktop-main-scroll" style={{ padding: '0 20px' }}>
                   {(() => {
                     // 1. Separate pending and completed
                     const pendientes = filteredTasks.filter(t => !t.completed);
@@ -545,7 +549,7 @@ function AppContent() {
                     );
                   })()}
                 </div>
-              </>
+              </div>
             ) : currentView === 'calendar' ? (
               <FullCalendar tasks={mappedTasks} selectedDate={selectedDate} onSelectDate={(d) => { setSelectedDate(d); setCurrentView('home'); }} />
             ) : (
