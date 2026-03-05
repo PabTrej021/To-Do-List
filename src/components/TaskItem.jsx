@@ -175,7 +175,7 @@ export default function TaskItem({ task, onToggle, onDelete, onEdit }) {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <p className="task-title">{task.title}</p>
             {/* Priority Badge, Countdown & Edit */}
-            <div className="task-item-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
               {!task.completed && (() => {
                 const countdown = getTimeRemaining(task.due_date);
                 return countdown ? (
@@ -197,12 +197,15 @@ export default function TaskItem({ task, onToggle, onDelete, onEdit }) {
                   {priority.charAt(0).toUpperCase() + priority.slice(1)}
                 </span>
               )}
-              <button className="edit-btn" onClick={() => setShowPomodoro(!showPomodoro)} aria-label="Pomodoro">
-                <TimerIcon />
-              </button>
-              <button className="edit-btn" onClick={() => onEdit(task)} aria-label="Editar tarea">
-                <PencilIcon />
-              </button>
+              {/* Pomodoro & Edit Buttons (Hover on Desktop) */}
+              <div className="hover-actions" style={{ display: 'flex', gap: '0.5rem' }}>
+                <button className="edit-btn" onClick={() => setShowPomodoro(!showPomodoro)} aria-label="Pomodoro">
+                  <TimerIcon />
+                </button>
+                <button className="edit-btn" onClick={() => onEdit(task)} aria-label="Editar tarea">
+                  <PencilIcon />
+                </button>
+              </div>
             </div>
           </div>
 
@@ -271,6 +274,19 @@ export default function TaskItem({ task, onToggle, onDelete, onEdit }) {
         /* Edit Button */
         .edit-btn { background: var(--bg-color-secondary); border: 1px solid var(--glass-border); color: var(--text-secondary); border-radius: 8px; padding: 0.35rem; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all var(--transition-fast); }
         .edit-btn:hover { color: var(--accent-color); background: var(--glass-bg); transform: scale(1.05); }
+
+        /* Hover Inteligente para Escritorio */
+        @media (hover: hover) and (pointer: fine) {
+          .hover-actions {
+            opacity: 0;
+            transform: translateX(10px);
+            transition: all 0.3s ease;
+          }
+          .task-card:hover .hover-actions {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
 
         .task-card.completed .task-title, .task-card.completed .task-description { color: var(--text-secondary); text-decoration: line-through; opacity: 0.5; }
         .task-card.completed .task-progress-fill { background: var(--text-secondary); }

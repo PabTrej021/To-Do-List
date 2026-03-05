@@ -76,6 +76,44 @@
   margin: 0 auto;
 }
 
+/* --- Desktop Layout (min 1024px) --- */
+@media (min-width: 1024px) {
+  .main-content {
+    max-width: 1200px;
+    padding-top: 2.5rem;
+  }
+
+  .home-layout {
+    display: grid;
+    grid-template-columns: 350px 1fr;
+    gap: 40px;
+    align-items: start;
+  }
+
+  .home-left-sidebar {
+    position: sticky;
+    top: 20px;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .home-left-sidebar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Desktop Category Grid instead of Carousel */
+  .category-section .horizontal-scroll {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    padding: 0 5px 15px 5px !important;
+    /* Allow shadow to bleed slightly */
+    white-space: normal;
+  }
+}
+
 /* Base Interactions */
 button,
 a,
@@ -780,79 +818,4 @@ input {
 
 .btn-danger-text:hover {
   opacity: 0.8;
-}
-
-/* ========================================= */
-/* DESKTOP 2-COLUMN LAYOUT                   */
-/* ========================================= */
-@media (min-width: 1024px) {
-  .app-layout-desktop {
-    display: grid;
-    grid-template-columns: 360px 1fr;
-    gap: 2rem;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 2rem;
-    min-height: 100vh;
-    align-items: start;
-  }
-
-  .desktop-sidebar {
-    position: sticky;
-    top: 2rem;
-    max-height: calc(100vh - 4rem);
-    overflow-y: auto;
-  }
-
-  .desktop-main-scroll {
-    min-height: 0;
-    overflow-y: auto;
-  }
-
-  /* Category Grid for Desktop */
-  .category-carousel-grid {
-    display: grid !important;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 15px;
-    overflow-x: visible !important;
-  }
-
-  /* Wider task cards on desktop */
-  .main-content {
-    max-width: 100%;
-  }
-}
-
-/* ========================================= */
-/* HOVER vs TOUCH: TASK ITEM ACTIONS         */
-/* ========================================= */
-
-/* Mouse users: hide action buttons, show on hover */
-@media (hover: hover) and (pointer: fine) {
-  .task-item-actions {
-    opacity: 0;
-    transform: translateX(8px);
-    transition: all 0.25s ease;
-  }
-
-  .task-card:hover .task-item-actions,
-  .task-item:hover .task-item-actions {
-    opacity: 1;
-    transform: translateX(0);
-  }
-
-  .task-card:hover,
-  .task-item:hover {
-    background: var(--bg-color-secondary);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-  }
-}
-
-/* Touch devices: always show action buttons */
-@media (hover: none) and (pointer: coarse) {
-  .task-item-actions {
-    opacity: 1;
-    transform: none;
-  }
 }
