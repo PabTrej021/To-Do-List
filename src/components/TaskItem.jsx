@@ -175,7 +175,7 @@ export default function TaskItem({ task, onToggle, onDelete, onEdit }) {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <p className="task-title">{task.title}</p>
             {/* Priority Badge, Countdown & Edit */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+            <div className="task-item-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
               {!task.completed && (() => {
                 const countdown = getTimeRemaining(task.due_date);
                 return countdown ? (
