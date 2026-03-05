@@ -76,43 +76,7 @@
   margin: 0 auto;
 }
 
-/* --- Desktop Layout (min 1024px) --- */
-@media (min-width: 1024px) {
-  .main-content {
-    max-width: 1200px;
-    padding-top: 2.5rem;
-  }
 
-  .home-layout {
-    display: grid;
-    grid-template-columns: 350px 1fr;
-    gap: 40px;
-    align-items: start;
-  }
-
-  .home-left-sidebar {
-    position: sticky;
-    top: 20px;
-    max-height: calc(100vh - 40px);
-    overflow-y: auto;
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-
-  .home-left-sidebar::-webkit-scrollbar {
-    display: none;
-  }
-
-  /* Desktop Category Grid instead of Carousel */
-  .category-section .horizontal-scroll {
-    display: grid !important;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 15px;
-    padding: 0 5px 15px 5px !important;
-    /* Allow shadow to bleed slightly */
-    white-space: normal;
-  }
-}
 
 /* Base Interactions */
 button,

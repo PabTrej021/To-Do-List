@@ -100,7 +100,8 @@ export const useTasks = (session, showToast, onTaskComplete) => {
             description: newTask.description,
             user_id: newTask.user_id,
             due_date: newTask.due_date,
-            priority: newTask.priority
+            priority: newTask.priority,
+            category: newTask.category
         }]);
     };
 
