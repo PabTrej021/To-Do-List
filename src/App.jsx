@@ -222,12 +222,8 @@ function AppContent() {
     category: t.category || (t.description?.includes('Categoria:') ? t.description.split(': ')[1] : 'other')
   })), [tasks]);
 
-  const dateFilteredTasks = useMemo(() => {
-    return mappedTasks.filter(t => t.due_date ? isSameDay(t.due_date, selectedDate) : isSameDay(new Date(), selectedDate));
-  }, [mappedTasks, selectedDate]);
-
   const filteredTasks = useMemo(() => {
-    let list = dateFilteredTasks;
+    let list = mappedTasks;
 
     if (activeTab === 'Personal') list = list.filter(t => t.category === 'home' || t.category === 'health');
     if (activeTab === 'Study') list = list.filter(t => t.category === 'study');
@@ -235,7 +231,7 @@ function AppContent() {
     if (searchQuery) list = list.filter(t => t.title?.toLowerCase().includes(searchQuery.toLowerCase()));
 
     return list;
-  }, [dateFilteredTasks, activeTab, searchQuery]);
+  }, [mappedTasks, activeTab, searchQuery]);
 
   const userName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || 'User';
   const topPriorityTask = filteredTasks[0];
@@ -421,7 +417,7 @@ function AppContent() {
                 </div>
 
                 <div className="no-scrollbar" style={{ overflowX: 'auto', marginBottom: '1.5rem' }}>
-                  <CategoryCarousel tasks={dateFilteredTasks} onAddCategoryTask={(catId) => { setModalDefaultCategory(catId); setShowTaskModal(true); }} />
+                  <CategoryCarousel tasks={mappedTasks} onAddCategoryTask={(catId) => { setModalDefaultCategory(catId); setShowTaskModal(true); }} />
                 </div>
 
                 {/* Horizontal Filter Pills */}
@@ -452,88 +448,97 @@ function AppContent() {
 
                 <div style={{ padding: '0 20px' }}>
                   {(() => {
-                    const allPending = filteredTasks.filter(t => !t.completed);
-                    const completed = filteredTasks.filter(t => t.completed);
+                    // 1. Separate pending and completed
+                    const pendientes = filteredTasks.filter(t => !t.completed);
+                    const completadas = filteredTasks.filter(t => t.completed);
 
-                    // Group pending tasks by date
-                    const grouped = {};
-                    allPending.forEach(t => {
-                      const key = t.due_date ? new Date(t.due_date).toDateString() : '__nodate__';
-                      if (!grouped[key]) grouped[key] = [];
-                      grouped[key].push(t);
+                    // 2. Group pending tasks by formatted date string
+                    const tareasAgrupadas = pendientes.reduce((grupos, task) => {
+                      let nombreFecha = 'Bandeja de Entrada (Sin Fecha)';
+
+                      if (task.due_date) {
+                        const fechaObj = new Date(task.due_date);
+                        const hoy = new Date();
+                        const manana = new Date(); manana.setDate(hoy.getDate() + 1);
+
+                        if (isSameDay(fechaObj, hoy)) {
+                          nombreFecha = 'Hoy';
+                        } else if (isSameDay(fechaObj, manana)) {
+                          nombreFecha = 'Mañana';
+                        } else {
+                          nombreFecha = fechaObj.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+                          nombreFecha = nombreFecha.charAt(0).toUpperCase() + nombreFecha.slice(1);
+                        }
+                      }
+
+                      if (!grupos[nombreFecha]) grupos[nombreFecha] = [];
+                      grupos[nombreFecha].push(task);
+                      return grupos;
+                    }, {});
+
+                    const fechasOrdenadas = Object.keys(tareasAgrupadas).sort((a, b) => {
+                      if (a.includes('Sin Fecha')) return -1;
+                      if (b.includes('Sin Fecha')) return 1;
+                      if (a === 'Hoy') return -1;
+                      if (b === 'Hoy') return 1;
+                      if (a === 'Mañana') return -1;
+                      if (b === 'Mañana') return 1;
+                      return 0;
                     });
-
-                    // Sort group keys chronologically, "no date" first
-                    const today = new Date();
-                    const tomorrow = new Date(); tomorrow.setDate(today.getDate() + 1);
-
-                    const sortedKeys = Object.keys(grouped).sort((a, b) => {
-                      if (a === '__nodate__') return -1;
-                      if (b === '__nodate__') return 1;
-                      return new Date(a) - new Date(b);
-                    });
-
-                    const getDateLabel = (key) => {
-                      if (key === '__nodate__') return 'Bandeja de Entrada';
-                      if (key === today.toDateString()) return 'Hoy';
-                      if (key === tomorrow.toDateString()) return 'Mañana';
-                      const d = new Date(key);
-                      return d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })
-                        .replace(/^\w/, c => c.toUpperCase());
-                    };
-
-                    if (allPending.length === 0 && !loading && tasks.length === 0) {
-                      return (
-                        <div style={{ textAlign: 'center', marginTop: '2rem', padding: '2rem', background: 'var(--glass-bg)', border: '1px dashed var(--glass-border)', borderRadius: '15px' }}>
-                          <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontWeight: 600 }}>Tus tareas están al día. ¡Empieza tu próxima etapa!</p>
-                          <button onClick={loadEngineeringTemplates} className="btn-add" style={{ margin: '0 auto', fontSize: '0.9rem' }}>
-                            Cargar Prácticas Base (Ingeniería)
-                          </button>
-                        </div>
-                      );
-                    }
 
                     return (
                       <>
-                        {sortedKeys.map(key => (
-                          <div key={key} style={{ marginBottom: '1.5rem' }}>
-                            <h3 className="text-title" style={{
-                              fontSize: key === today.toDateString() ? '1.25rem' : '1.05rem',
-                              marginBottom: '0.75rem',
-                              display: 'flex', alignItems: 'center', gap: '0.5rem',
-                              color: key === '__nodate__' ? 'var(--text-secondary)' : 'var(--text-primary)'
-                            }}>
-                              {key === '__nodate__' && (
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>
-                              )}
-                              {getDateLabel(key)}
-                            </h3>
-                            <TaskList tasks={grouped[key]} onToggle={(id, c) => toggleTask(id, c, triggerConfetti)} onDelete={deleteTask} onEdit={handleEditTask} />
-                          </div>
-                        ))}
+                        {/* RENDER DATE-GROUPED PENDING TASKS */}
+                        {fechasOrdenadas.length > 0 ? (
+                          fechasOrdenadas.map((fecha) => (
+                            <div key={fecha} style={{ marginBottom: '1.5rem' }}>
+                              <h3 style={{
+                                color: '#fff', opacity: 0.8, fontSize: '0.85rem',
+                                textTransform: 'uppercase', letterSpacing: '1px',
+                                marginBottom: '0.75rem', marginTop: '1.5rem',
+                                fontWeight: 700,
+                                display: 'flex', alignItems: 'center', gap: '0.5rem'
+                              }}>
+                                {fecha === 'Hoy' && '📌'}
+                                {fecha === 'Mañana' && '📅'}
+                                {fecha.includes('Sin Fecha') && '📥'}
+                                {fecha}
+                              </h3>
+                              <TaskList tasks={tareasAgrupadas[fecha]} onToggle={(id, c) => toggleTask(id, c, triggerConfetti)} onDelete={deleteTask} onEdit={handleEditTask} />
+                            </div>
+                          ))
+                        ) : (
+                          !loading && tasks.length === 0 && (
+                            <div style={{ textAlign: 'center', marginTop: '2rem', padding: '2rem', background: 'var(--glass-bg)', border: '1px dashed var(--glass-border)', borderRadius: '15px' }}>
+                              <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontWeight: 600 }}>No tienes tareas pendientes. ¡A descansar! 🎉</p>
+                              <button onClick={loadEngineeringTemplates} className="btn-add" style={{ margin: '0 auto', fontSize: '0.9rem' }}>
+                                Cargar Prácticas Base (Ingeniería)
+                              </button>
+                            </div>
+                          )
+                        )}
 
-                        {/* Section: Completed */}
-                        {completed.length > 0 && (
-                          <div style={{ marginTop: '1.5rem' }}>
+                        {/* COMPLETED SECTION */}
+                        {completadas.length > 0 && (
+                          <div style={{ marginTop: '2.5rem', opacity: 0.6 }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                              <h3 className="text-title" style={{ fontSize: '1.05rem', color: 'var(--text-secondary)' }}>Completadas ({completed.length})</h3>
+                              <h3 style={{ color: '#fff', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 700 }}>
+                                ✅ Completadas ({completadas.length})
+                              </h3>
                               <button
                                 onClick={() => { if (confirm('¿Vaciar todas las tareas completadas?')) clearCompleted(); }}
                                 style={{
                                   display: 'flex', alignItems: 'center', gap: '0.4rem',
-                                  fontSize: '0.8rem', color: 'var(--danger-color)', fontWeight: 600,
+                                  fontSize: '0.8rem', color: '#ff3b30', fontWeight: 600,
                                   background: 'rgba(255, 59, 48, 0.1)', border: '1px solid rgba(255,59,48,0.2)',
-                                  padding: '0.4rem 0.8rem', borderRadius: '20px', cursor: 'pointer',
-                                  transition: 'all 0.2s'
+                                  padding: '0.4rem 0.8rem', borderRadius: '20px', cursor: 'pointer'
                                 }}
                               >
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>
                                 Vaciar
                               </button>
                             </div>
-                            <div style={{ opacity: 0.5 }}>
-                              <TaskList tasks={completed} onToggle={(id, c) => toggleTask(id, c, triggerConfetti)} onDelete={deleteTask} onEdit={handleEditTask} />
-                            </div>
+                            <TaskList tasks={completadas} onToggle={(id, c) => toggleTask(id, c, triggerConfetti)} onDelete={deleteTask} onEdit={handleEditTask} />
                           </div>
                         )}
                       </>
@@ -591,7 +596,8 @@ function AppContent() {
             />
           )}
         </div>
-      )}
+      )
+      }
 
       <style>{`
         .auth-loader-container {
@@ -642,7 +648,7 @@ function AppContent() {
           50% { box-shadow: 0 0 35px rgba(255, 50, 100, 0.9); }
         }
       `}</style>
-    </div>
+    </div >
   );
 }
 
