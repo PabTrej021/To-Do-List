@@ -447,8 +447,28 @@ function AppContent() {
                 </div>
                 <div style={{ padding: '0 20px' }}>
                   {(() => {
-                    // 1. Separate pending and completed
-                    const pendientes = filteredTasks.filter(t => !t.completed);
+                    // 1. Separate pending and completed, adding Date Filtering
+                    const isSameDayLocale = (date1, date2) => {
+                      if (!date1 || !date2) return false;
+                      const d1 = new Date(date1);
+                      const d2 = new Date(date2);
+                      return d1.getFullYear() === d2.getFullYear() &&
+                        d1.getMonth() === d2.getMonth() &&
+                        d1.getDate() === d2.getDate();
+                    };
+
+                    const pendientes = filteredTasks.filter(task => {
+                      if (task.completed) return false;
+
+                      // If task has no date, show it only if user selected "Today"
+                      if (!task.due_date) {
+                        return isSameDayLocale(new Date(), selectedDate);
+                      }
+
+                      // Otherwise, strictly match the clicked calendar date
+                      return isSameDayLocale(task.due_date, selectedDate);
+                    });
+
                     const completadas = filteredTasks.filter(t => t.completed);
 
                     // 2. Group pending tasks by formatted date string
