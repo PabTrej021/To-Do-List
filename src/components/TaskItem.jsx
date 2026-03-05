@@ -173,7 +173,14 @@ export default function TaskItem({ task, onToggle, onDelete, onEdit }) {
 
         <div className="task-content">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <p className="task-title">{task.title}</p>
+            <div style={{ display: 'flex', flexDirection: 'column', paddingRight: '1rem', flex: 1 }}>
+              <p className="task-title">{task.title}</p>
+              {task.description && (
+                <p className="task-description" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginTop: '4px', marginBottom: '8px', lineHeight: '1.4' }}>
+                  {task.description}
+                </p>
+              )}
+            </div>
             {/* Priority Badge, Countdown & Edit */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
               {!task.completed && (() => {
@@ -209,7 +216,7 @@ export default function TaskItem({ task, onToggle, onDelete, onEdit }) {
             </div>
           </div>
 
-          <p className="task-description">{task.description}</p>
+
 
           {/* Pomodoro Timer Feature */}
           {showPomodoro && (

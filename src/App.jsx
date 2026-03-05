@@ -246,7 +246,7 @@ function AppContent() {
     ];
     // Ejecutarlas seguidas
     for (const t of templates) {
-      addTask(t.title, t.cat, '');
+      addTask(t.title, '', t.cat, '');
     }
   };
 
@@ -584,7 +584,7 @@ function AppContent() {
             <TaskInputModal
               taskToEdit={taskToEdit}
               defaultCategory={modalDefaultCategory}
-              onAdd={(title, cat, due) => { addTask(title, cat, due, taskToEdit?.id); setShowTaskModal(false); }}
+              onAdd={(title, desc, cat, due) => { addTask(title, desc, cat, due, taskToEdit?.id); setShowTaskModal(false); }}
               onCancel={() => { setShowTaskModal(false); setTaskToEdit(null); }}
             />
           )}

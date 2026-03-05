@@ -71,18 +71,18 @@ export const useTasks = (session, showToast, onTaskComplete) => {
     }, [tasks]);
 
     // CRUD Handlers
-    const addTask = async (title, category, dueDate, updateId = null) => {
+    const addTask = async (title, description, category, dueDate, updateId = null) => {
         if (updateId) {
-            setTasks(prev => prev.map(t => t.id === updateId ? { ...t, title, category, description: `Categoria: ${category}`, due_date: dueDate } : t));
+            setTasks(prev => prev.map(t => t.id === updateId ? { ...t, title, category, description, due_date: dueDate } : t));
             showToast('Tarea Actualizada', 'Cambios guardados');
-            if (session) await supabase.from('tasks').update({ title, description: `Categoria: ${category}`, due_date: dueDate }).eq('id', updateId);
+            if (session) await supabase.from('tasks').update({ title, description, due_date: dueDate, category }).eq('id', updateId);
             return;
         }
 
         const newTask = {
             id: crypto.randomUUID(),
             title,
-            description: `Categoria: ${category}`,
+            description,
             priority: title.length > 20 ? 'high' : 'medium',
             progress: 0,
             completed: false,

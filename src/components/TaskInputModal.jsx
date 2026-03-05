@@ -20,6 +20,7 @@ export default function TaskInputModal({ onAdd, onCancel, taskToEdit, defaultCat
   const [isListening, setIsListening] = useState(false);
 
   const [title, setTitle] = useState(taskToEdit?.title || '');
+  const [description, setDescription] = useState(taskToEdit?.description || '');
   const [category, setCategory] = useState(taskToEdit?.category || defaultCategory || 'other');
   const [dueDate, setDueDate] = useState(taskToEdit?.due_date ? taskToEdit.due_date.slice(0, 16) : '');
 
@@ -33,8 +34,9 @@ export default function TaskInputModal({ onAdd, onCancel, taskToEdit, defaultCat
     e.preventDefault();
     if (title.trim()) {
       const formattedDate = dueDate ? new Date(dueDate).toISOString() : null;
-      onAdd(title.trim(), category, formattedDate, isEditing ? taskToEdit.id : null);
+      onAdd(title.trim(), description.trim(), category, formattedDate, isEditing ? taskToEdit.id : null);
       setTitle('');
+      setDescription('');
     }
   };
 
@@ -88,6 +90,23 @@ export default function TaskInputModal({ onAdd, onCancel, taskToEdit, defaultCat
               {isListening ? <MicIcon /> : <MicIcon />}
             </button>
           </div>
+
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Añade detalles o una descripción (opcional)..."
+            style={{
+              background: 'rgba(255, 255, 255, 0.1)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              color: '#fff',
+              padding: '12px',
+              borderRadius: '12px',
+              width: '100%',
+              minHeight: '80px',
+              resize: 'none',
+              marginTop: '15px'
+            }}
+          />
 
           <div className="input-group">
             <label>{t('dateOptional')}</label>
