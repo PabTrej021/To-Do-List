@@ -31,22 +31,19 @@ export const useTasks = (session, showToast, onTaskComplete) => {
 
         fetchTasks(session.user.id);
 
-        const channel = supabase.channel('public:tasks')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tasks', filter: `user_id=eq.${session.user.id}` }, payload => {
-                setTasks(prev => {
-                    if (prev.some(t => t.id === payload.new.id)) return prev;
-                    return [payload.new, ...prev];
-                });
-            })
-            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tasks', filter: `user_id=eq.${session.user.id}` }, payload => {
-                setTasks(prev => prev.map(t => (t.id === payload.new.id ? payload.new : t)));
-            })
-            .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'tasks', filter: `user_id=eq.${session.user.id}` }, payload => {
-                setTasks(prev => prev.filter(t => t.id !== payload.old.id));
-            })
+        const subscription = supabase.channel('schema-db-changes')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${session.user.id}` },
+                (payload) => {
+                    console.log('Cambio detectado en DB:', payload);
+                    // Estrategia más segura: volver a traer todo para mantener el orden y filtros
+                    fetchTasks(session.user.id);
+                }
+            )
             .subscribe();
 
-        return () => supabase.removeChannel(channel);
+        return () => supabase.removeChannel(subscription);
     }, [session?.user?.id, fetchTasks]);
 
     // 10. Auto-Ordenamiento (Prioridad y Fecha)
@@ -75,7 +72,13 @@ export const useTasks = (session, showToast, onTaskComplete) => {
         if (updateId) {
             setTasks(prev => prev.map(t => t.id === updateId ? { ...t, title, category, description, due_date: dueDate } : t));
             showToast('Tarea Actualizada', 'Cambios guardados');
-            if (session) await supabase.from('tasks').update({ title, description, due_date: dueDate, category }).eq('id', updateId);
+            if (session) {
+                const { error } = await supabase.from('tasks').update({ title, description, due_date: dueDate, category }).eq('id', updateId);
+                if (error) {
+                    console.error('Error de Supabase al actualizar tarea (RLS/Policies):', error);
+                    fetchTasks(session.user.id); // Re-fetch para revertir si falló
+                }
+            }
             return;
         }
 
@@ -94,15 +97,22 @@ export const useTasks = (session, showToast, onTaskComplete) => {
 
         setTasks(prev => [newTask, ...prev]);
         showToast('Tarea agregada', 'En camino');
-        if (session) await supabase.from('tasks').insert([{
-            id: newTask.id,
-            title: newTask.title,
-            description: newTask.description,
-            user_id: newTask.user_id,
-            due_date: newTask.due_date,
-            priority: newTask.priority,
-            category: newTask.category
-        }]);
+        if (session) {
+            const { error } = await supabase.from('tasks').insert([{
+                id: newTask.id,
+                title: newTask.title,
+                description: newTask.description,
+                user_id: newTask.user_id,
+                due_date: newTask.due_date,
+                priority: newTask.priority,
+                category: newTask.category
+            }]);
+
+            if (error) {
+                console.error('Error de Supabase al insertar tarea (RLS/Policies):', error);
+                fetchTasks(session.user.id); // Re-fetch para revertir
+            }
+        }
     };
 
     const toggleTask = async (id, currentCompleted, onConfetti) => {
@@ -123,7 +133,13 @@ export const useTasks = (session, showToast, onTaskComplete) => {
             }
         }
 
-        if (session) await supabase.from('tasks').update({ completed: isCompleting }).eq('id', id);
+        if (session) {
+            const { error } = await supabase.from('tasks').update({ completed: isCompleting }).eq('id', id);
+            if (error) {
+                console.error('Error de Supabase al completar tarea:', error);
+                fetchTasks(session.user.id);
+            }
+        }
     };
 
     // Soft Delete (Undo)
@@ -142,7 +158,13 @@ export const useTasks = (session, showToast, onTaskComplete) => {
 
         undoTimeoutRef.current = setTimeout(async () => {
             setDeletedTaskCache(null);
-            if (session) await supabase.from('tasks').delete().eq('id', id);
+            if (session) {
+                const { error } = await supabase.from('tasks').delete().eq('id', id);
+                if (error) {
+                    console.error('Error de Supabase al eliminar tarea:', error);
+                    fetchTasks(session.user.id);
+                }
+            }
         }, 5000); // 5 seconds to undo
     };
 
@@ -176,7 +198,11 @@ export const useTasks = (session, showToast, onTaskComplete) => {
         if (completedIds.length === 0) return;
         setTasks(prev => prev.filter(t => !t.completed));
         if (session) {
-            await supabase.from('tasks').delete().in('id', completedIds);
+            const { error } = await supabase.from('tasks').delete().in('id', completedIds);
+            if (error) {
+                console.error('Error de Supabase al vaciar completadas:', error);
+                fetchTasks(session.user.id);
+            }
         }
     };
 
