@@ -451,47 +451,72 @@ function AppContent() {
                 </div>
 
                 <div style={{ padding: '0 20px' }}>
-                  {/* Section: Today's Tasks */}
-                  <h3 className="text-title" style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>
-                    {isSameDay(selectedDate, new Date()) ? "Tareas de Hoy" : "Tareas para el " + selectedDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}
-                  </h3>
                   {(() => {
-                    const pending = filteredTasks.filter(t => !t.completed);
-                    const upcoming = mappedTasks.filter(t => !t.completed && t.due_date && new Date(t.due_date) > new Date() && !isSameDay(t.due_date, selectedDate))
-                      .sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
+                    const allPending = filteredTasks.filter(t => !t.completed);
                     const completed = filteredTasks.filter(t => t.completed);
+
+                    // Group pending tasks by date
+                    const grouped = {};
+                    allPending.forEach(t => {
+                      const key = t.due_date ? new Date(t.due_date).toDateString() : '__nodate__';
+                      if (!grouped[key]) grouped[key] = [];
+                      grouped[key].push(t);
+                    });
+
+                    // Sort group keys chronologically, "no date" first
+                    const today = new Date();
+                    const tomorrow = new Date(); tomorrow.setDate(today.getDate() + 1);
+
+                    const sortedKeys = Object.keys(grouped).sort((a, b) => {
+                      if (a === '__nodate__') return -1;
+                      if (b === '__nodate__') return 1;
+                      return new Date(a) - new Date(b);
+                    });
+
+                    const getDateLabel = (key) => {
+                      if (key === '__nodate__') return 'Bandeja de Entrada';
+                      if (key === today.toDateString()) return 'Hoy';
+                      if (key === tomorrow.toDateString()) return 'Mañana';
+                      const d = new Date(key);
+                      return d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })
+                        .replace(/^\w/, c => c.toUpperCase());
+                    };
+
+                    if (allPending.length === 0 && !loading && tasks.length === 0) {
+                      return (
+                        <div style={{ textAlign: 'center', marginTop: '2rem', padding: '2rem', background: 'var(--glass-bg)', border: '1px dashed var(--glass-border)', borderRadius: '15px' }}>
+                          <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontWeight: 600 }}>Tus tareas están al día. ¡Empieza tu próxima etapa!</p>
+                          <button onClick={loadEngineeringTemplates} className="btn-add" style={{ margin: '0 auto', fontSize: '0.9rem' }}>
+                            Cargar Prácticas Base (Ingeniería)
+                          </button>
+                        </div>
+                      );
+                    }
 
                     return (
                       <>
-                        {pending.length === 0 && !loading && tasks.length === 0 && (
-                          <div style={{ textAlign: 'center', marginTop: '2rem', padding: '2rem', background: 'var(--glass-bg)', border: '1px dashed var(--glass-border)', borderRadius: '15px' }}>
-                            <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontWeight: 600 }}>Tus tareas están al día. ¡Empieza tu próxima etapa!</p>
-                            <button onClick={loadEngineeringTemplates} className="btn-add" style={{ margin: '0 auto', fontSize: '0.9rem' }}>
-                              Cargar Prácticas Base (Ingeniería)
-                            </button>
-                          </div>
-                        )}
-
-                        <TaskList tasks={pending} onToggle={(id, c) => toggleTask(id, c, triggerConfetti)} onDelete={deleteTask} onEdit={handleEditTask} />
-
-                        {/* Section: Upcoming Tasks */}
-                        {upcoming.length > 0 && isSameDay(selectedDate, new Date()) && (
-                          <div style={{ marginTop: '2rem' }}>
-                            <h3 className="text-title" style={{ fontSize: '1.1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
-                              Próximas Tareas
+                        {sortedKeys.map(key => (
+                          <div key={key} style={{ marginBottom: '1.5rem' }}>
+                            <h3 className="text-title" style={{
+                              fontSize: key === today.toDateString() ? '1.25rem' : '1.05rem',
+                              marginBottom: '0.75rem',
+                              display: 'flex', alignItems: 'center', gap: '0.5rem',
+                              color: key === '__nodate__' ? 'var(--text-secondary)' : 'var(--text-primary)'
+                            }}>
+                              {key === '__nodate__' && (
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>
+                              )}
+                              {getDateLabel(key)}
                             </h3>
-                            <div style={{ opacity: 0.8 }}>
-                              <TaskList tasks={upcoming} onToggle={(id, c) => toggleTask(id, c, triggerConfetti)} onDelete={deleteTask} onEdit={handleEditTask} />
-                            </div>
+                            <TaskList tasks={grouped[key]} onToggle={(id, c) => toggleTask(id, c, triggerConfetti)} onDelete={deleteTask} onEdit={handleEditTask} />
                           </div>
-                        )}
+                        ))}
 
                         {/* Section: Completed */}
                         {completed.length > 0 && (
-                          <div style={{ marginTop: '2rem' }}>
+                          <div style={{ marginTop: '1.5rem' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                              <h3 className="text-title" style={{ fontSize: '1.1rem', color: 'var(--text-secondary)' }}>Completadas ({completed.length})</h3>
+                              <h3 className="text-title" style={{ fontSize: '1.05rem', color: 'var(--text-secondary)' }}>Completadas ({completed.length})</h3>
                               <button
                                 onClick={() => { if (confirm('¿Vaciar todas las tareas completadas?')) clearCompleted(); }}
                                 style={{
