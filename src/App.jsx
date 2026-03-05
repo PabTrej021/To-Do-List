@@ -15,7 +15,6 @@ import StatCharts from './components/StatCharts';
 
 import Header from './components/Header';
 import TaskInputModal from './components/TaskInputModal';
-import QuickAdd from './components/QuickAdd';
 import DayTasksModal from './components/DayTasksModal';
 
 const SearchIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>;
@@ -108,7 +107,7 @@ function AppContent() {
   };
 
   // Use tasks Hook
-  const { tasks, loading, addTask, toggleTask, deleteTask, undoDelete, deletedTaskCache } = useTasks(session, showToast, () => addXp(25));
+  const { tasks, loading, addTask, toggleTask, deleteTask, undoDelete, deletedTaskCache, clearCompleted } = useTasks(session, showToast, () => addXp(25));
 
   // Session & Data Fetching
   useEffect(() => {
@@ -352,38 +351,45 @@ function AppContent() {
             tasks={tasks}
           />
 
-          {zenMode && topPriorityTask && (
-            <div className="zen-mode-overlay" style={{
-              position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
-              backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(30px)', zIndex: 9999, display: 'flex',
-              flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-              padding: '2rem', animation: 'fadeInZen 0.5s ease-out forwards'
-            }}>
-              <button
-                onClick={() => setZenMode(false)}
-                style={{
-                  position: 'absolute', top: '2rem', right: '2rem',
-                  background: 'var(--glass-bg)', border: '1px solid var(--glass-border)',
-                  color: 'white', padding: '0.6rem 1.2rem', borderRadius: '30px',
-                  fontWeight: '700', cursor: 'pointer', transition: 'all 0.3s'
-                }}
-              >
-                SALIR DEL ZEN
-              </button>
+          {zenMode && (() => {
+            const zenTask = filteredTasks.filter(t => !t.completed)[0];
+            return zenTask ? (
+              <div className="zen-mode-overlay" style={{
+                position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+                backgroundColor: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(30px)', zIndex: 9999, display: 'flex',
+                flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                padding: '2rem', animation: 'fadeInZen 0.5s ease-out forwards'
+              }}>
+                <button
+                  onClick={() => setZenMode(false)}
+                  style={{
+                    position: 'absolute', top: '2rem', right: '2rem',
+                    background: 'var(--glass-bg)', border: '1px solid var(--glass-border)',
+                    color: 'white', padding: '0.6rem 1.2rem', borderRadius: '30px',
+                    fontWeight: '700', cursor: 'pointer', transition: 'all 0.3s'
+                  }}
+                >
+                  SALIR
+                </button>
 
-              <h2 style={{ fontSize: '2.5rem', marginBottom: '3rem', textAlign: 'center', color: 'white', letterSpacing: '0.1em' }}>MODO ENFOQUE</h2>
+                <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '1rem' }}>MODO ENFOQUE</p>
+                <h2 style={{ fontSize: '2rem', marginBottom: '2.5rem', textAlign: 'center', color: 'white', maxWidth: '500px', lineHeight: 1.4 }}>{zenTask.title}</h2>
 
-              <div style={{ width: '100%', maxWidth: '600px', pointerEvents: 'auto' }}>
-                <TaskItem
-                  task={topPriorityTask}
-                  onToggle={(id, c) => { toggleTask(id, c, triggerConfetti); if (!c) setTimeout(() => setZenMode(false), 800); }}
-                  onDelete={(id) => { deleteTask(id); setTimeout(() => setZenMode(false), 500); }}
-                  onEdit={handleEditTask}
-                />
+                <button
+                  onClick={() => { toggleTask(zenTask.id, zenTask.completed, triggerConfetti); setTimeout(() => setZenMode(false), 800); }}
+                  style={{
+                    padding: '1rem 2.5rem', borderRadius: '50px', fontSize: '1.1rem', fontWeight: 800,
+                    background: 'linear-gradient(135deg, var(--accent-color), #ff719a)', color: 'white',
+                    border: 'none', cursor: 'pointer', boxShadow: '0 8px 30px rgba(255,45,85,0.5)',
+                    transition: 'all 0.3s', letterSpacing: '0.05em'
+                  }}
+                >
+                  ✓ ¡Completar y Volver!
+                </button>
+                <style>{`@keyframes fadeInZen { from { opacity: 0; } to { opacity: 1; } }`}</style>
               </div>
-              <style>{`@keyframes fadeInZen { from { opacity: 0; } to { opacity: 1; } }`}</style>
-            </div>
-          )}
+            ) : null;
+          })()}
 
           {/* Desktop Navigation Bar (Only visible on wide screens) */}
           <div className="desktop-nav">
@@ -399,9 +405,6 @@ function AppContent() {
           </div>
 
           <main className="main-content">
-            {/* Quick Add dynamically flows on Desktop, fixed on Mobile */}
-            <QuickAdd onAdd={(title, cat, due) => addTask(title, cat, due)} />
-
             {currentView === 'home' ? (
               <>
                 {/* Search Bar */}
@@ -448,27 +451,62 @@ function AppContent() {
                 </div>
 
                 <div style={{ padding: '0 20px' }}>
+                  {/* Section: Today's Tasks */}
                   <h3 className="text-title" style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>
                     {isSameDay(selectedDate, new Date()) ? "Tareas de Hoy" : "Tareas para el " + selectedDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}
                   </h3>
-                  {tasks.length === 0 && !loading && (
-                    <div style={{ textAlign: 'center', marginTop: '2rem', padding: '2rem', background: 'var(--glass-bg)', border: '1px dashed var(--glass-border)', borderRadius: '15px' }}>
-                      <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontWeight: 600 }}>Tus tareas están al día. ¡Empieza tu próxima etapa!</p>
-                      <button onClick={loadEngineeringTemplates} className="btn-add" style={{ margin: '0 auto', fontSize: '0.9rem' }}>
-                        Cargar Prácticas Base (Ingeniería)
-                      </button>
-                    </div>
-                  )}
                   {(() => {
                     const pending = filteredTasks.filter(t => !t.completed);
+                    const upcoming = mappedTasks.filter(t => !t.completed && t.due_date && new Date(t.due_date) > new Date() && !isSameDay(t.due_date, selectedDate))
+                      .sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
                     const completed = filteredTasks.filter(t => t.completed);
+
                     return (
                       <>
+                        {pending.length === 0 && !loading && tasks.length === 0 && (
+                          <div style={{ textAlign: 'center', marginTop: '2rem', padding: '2rem', background: 'var(--glass-bg)', border: '1px dashed var(--glass-border)', borderRadius: '15px' }}>
+                            <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontWeight: 600 }}>Tus tareas están al día. ¡Empieza tu próxima etapa!</p>
+                            <button onClick={loadEngineeringTemplates} className="btn-add" style={{ margin: '0 auto', fontSize: '0.9rem' }}>
+                              Cargar Prácticas Base (Ingeniería)
+                            </button>
+                          </div>
+                        )}
+
                         <TaskList tasks={pending} onToggle={(id, c) => toggleTask(id, c, triggerConfetti)} onDelete={deleteTask} onEdit={handleEditTask} />
+
+                        {/* Section: Upcoming Tasks */}
+                        {upcoming.length > 0 && isSameDay(selectedDate, new Date()) && (
+                          <div style={{ marginTop: '2rem' }}>
+                            <h3 className="text-title" style={{ fontSize: '1.1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+                              Próximas Tareas
+                            </h3>
+                            <div style={{ opacity: 0.8 }}>
+                              <TaskList tasks={upcoming} onToggle={(id, c) => toggleTask(id, c, triggerConfetti)} onDelete={deleteTask} onEdit={handleEditTask} />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Section: Completed */}
                         {completed.length > 0 && (
                           <div style={{ marginTop: '2rem' }}>
-                            <h3 className="text-title" style={{ fontSize: '1.1rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>Completadas</h3>
-                            <div style={{ opacity: 0.6 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                              <h3 className="text-title" style={{ fontSize: '1.1rem', color: 'var(--text-secondary)' }}>Completadas ({completed.length})</h3>
+                              <button
+                                onClick={() => { if (confirm('¿Vaciar todas las tareas completadas?')) clearCompleted(); }}
+                                style={{
+                                  display: 'flex', alignItems: 'center', gap: '0.4rem',
+                                  fontSize: '0.8rem', color: 'var(--danger-color)', fontWeight: 600,
+                                  background: 'rgba(255, 59, 48, 0.1)', border: '1px solid rgba(255,59,48,0.2)',
+                                  padding: '0.4rem 0.8rem', borderRadius: '20px', cursor: 'pointer',
+                                  transition: 'all 0.2s'
+                                }}
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>
+                                Vaciar
+                              </button>
+                            </div>
+                            <div style={{ opacity: 0.5 }}>
                               <TaskList tasks={completed} onToggle={(id, c) => toggleTask(id, c, triggerConfetti)} onDelete={deleteTask} onEdit={handleEditTask} />
                             </div>
                           </div>
@@ -487,12 +525,13 @@ function AppContent() {
 
 
 
-          {/* FAB for Modals */}
-          <div className="fab-container">
-            <button className="fab-button" onClick={() => { setTaskToEdit(null); setModalDefaultCategory('other'); setShowTaskModal(true); }}>
-              <PlusIcon />
-            </button>
-          </div>
+          {/* FAB - Protagonista */}
+          <button
+            className="fab-button-main"
+            onClick={() => { setTaskToEdit(null); setModalDefaultCategory('other'); setShowTaskModal(true); }}
+          >
+            <PlusIcon />
+          </button>
 
           {/* Mobile Bottom Navigation Dock */}
           <nav className="bottom-nav-dock">
@@ -546,6 +585,37 @@ function AppContent() {
         .pill-active { background: linear-gradient(135deg, var(--accent-color), #ff719a); color: white; border: none; box-shadow: 0 4px 15px rgba(255, 45, 85, 0.4); }
         .pill-inactive { background: var(--glass-bg); color: var(--text-secondary); border: 1px solid var(--glass-border); backdrop-filter: blur(10px); }
         .pill-inactive:hover { background: var(--bg-color-secondary); color: var(--text-primary); }
+
+        .fab-button-main {
+          position: fixed;
+          bottom: 30px;
+          right: 30px;
+          width: 60px;
+          height: 60px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, var(--accent-color), #ff719a);
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: none;
+          cursor: pointer;
+          box-shadow: 0 0 20px rgba(255, 50, 100, 0.6);
+          z-index: 100;
+          transition: all 0.3s;
+          animation: fabPulse 2s infinite;
+        }
+        .fab-button-main:hover {
+          transform: scale(1.1) rotate(90deg);
+          box-shadow: 0 0 30px rgba(255, 50, 100, 0.8);
+        }
+        .fab-button-main:active {
+          transform: scale(0.95);
+        }
+        @keyframes fabPulse {
+          0%, 100% { box-shadow: 0 0 20px rgba(255, 50, 100, 0.6); }
+          50% { box-shadow: 0 0 35px rgba(255, 50, 100, 0.9); }
+        }
       `}</style>
     </div>
   );

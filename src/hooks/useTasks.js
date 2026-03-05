@@ -169,6 +169,16 @@ export const useTasks = (session, showToast, onTaskComplete) => {
         showToast('Plantillas Cargadas', 'Listas para trabajar');
     };
 
+    // Clear all completed tasks
+    const clearCompleted = async () => {
+        const completedIds = tasks.filter(t => t.completed).map(t => t.id);
+        if (completedIds.length === 0) return;
+        setTasks(prev => prev.filter(t => !t.completed));
+        if (session) {
+            await supabase.from('tasks').delete().in('id', completedIds);
+        }
+    };
+
     return {
         tasks: sortedTasks,
         rawTasks: tasks,
@@ -178,6 +188,7 @@ export const useTasks = (session, showToast, onTaskComplete) => {
         deleteTask,
         undoDelete,
         deletedTaskCache,
-        loadEngineeringTemplates
+        loadEngineeringTemplates,
+        clearCompleted
     };
 };
