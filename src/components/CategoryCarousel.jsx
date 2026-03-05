@@ -20,9 +20,9 @@ const CATEGORY_DATA = [
 export default function CategoryCarousel({ tasks, onAddCategoryTask }) {
   const { t } = useI18n();
 
-  // Count tasks per category
+  // Count tasks per category — case-insensitive and null-safe
   const getCount = (categoryId) => {
-    return tasks.filter(t => t.category === categoryId && !t.completed).length;
+    return tasks.filter(t => (t.category || '').toLowerCase() === categoryId.toLowerCase() && !t.completed).length;
   };
 
   return (

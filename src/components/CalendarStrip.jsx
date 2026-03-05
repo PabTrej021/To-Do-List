@@ -20,21 +20,21 @@ const generateDays = (numDays = 14, locale = 'es') => {
   return days;
 };
 
-export default function CalendarStrip({ onSelectDate }) {
+export default function CalendarStrip({ selectedDate, onSelectDate }) {
   const { lang } = useI18n();
   const [days, setDays] = useState([]);
-  const [activeDateStr, setActiveDateStr] = useState('');
 
   useEffect(() => {
     const generated = generateDays(14, lang);
     setDays(generated);
-    setActiveDateStr(generated[0].fullDateStr);
-  }, [lang]); // Rehacer si cambia el idioma
+  }, [lang]);
 
   const handleSelect = (day) => {
-    setActiveDateStr(day.fullDateStr);
     onSelectDate(day.date);
   };
+
+  // Use the external selectedDate to determine which card is active
+  const activeDateStr = selectedDate ? selectedDate.toDateString() : new Date().toDateString();
 
   return (
     <div className="calendar-section">

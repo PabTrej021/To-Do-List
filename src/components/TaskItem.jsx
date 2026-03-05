@@ -7,6 +7,23 @@ const PencilIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="n
 const TimerIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>;
 
 // Base64 short pop sound for completion - Replaced directly with Web Audio API
+
+const getTimeRemaining = (dueDate) => {
+  if (!dueDate) return null;
+  const now = new Date();
+  const due = new Date(dueDate);
+  const diffMs = due - now;
+
+  if (diffMs < 0) return { text: 'Vencida ⚠️', color: '#ff3b30', urgent: true };
+
+  const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+  if (diffHrs > 24) return { text: `${Math.floor(diffHrs / 24)}d restantes`, color: '#34c759', urgent: false };
+  if (diffHrs > 0) return { text: `${diffHrs}h ${diffMins}m`, color: '#ffcc00', urgent: false };
+  return { text: `${diffMins}m 🔥`, color: '#ff3b30', urgent: true };
+};
+
 export default function TaskItem({ task, onToggle, onDelete, onEdit }) {
   const [isSwiping, setIsSwiping] = useState(false);
   const [swipeOffset, setSwipeOffset] = useState(0);
@@ -157,8 +174,24 @@ export default function TaskItem({ task, onToggle, onDelete, onEdit }) {
         <div className="task-content">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <p className="task-title">{task.title}</p>
-            {/* Priority Badge & Edit */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            {/* Priority Badge, Countdown & Edit */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+              {!task.completed && (() => {
+                const countdown = getTimeRemaining(task.due_date);
+                return countdown ? (
+                  <span style={{
+                    fontSize: '0.65rem', padding: '0.15rem 0.45rem', borderRadius: '4px',
+                    fontWeight: 700, letterSpacing: '0.03em',
+                    backgroundColor: `${countdown.color}20`,
+                    color: countdown.color,
+                    border: `1px solid ${countdown.color}40`,
+                    animation: countdown.urgent ? 'pulse 2s infinite' : 'none',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {countdown.text}
+                  </span>
+                ) : null;
+              })()}
               {!task.completed && (
                 <span className={`priority-badge priority-${priority}`}>
                   {priority.charAt(0).toUpperCase() + priority.slice(1)}
