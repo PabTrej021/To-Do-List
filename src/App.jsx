@@ -489,6 +489,9 @@ function AppContent() {
                       return true;
                     });
 
+                    // SECCIÓN MAESTRA: Todas las tareas que no estén completadas (Sin importar el filtro de fecha)
+                    const todasLasPendientes = filteredTasks.filter(task => !task.completed);
+
                     console.log("✅ Tareas pendientes que pasaron el filtro:", pendientes);
 
                     const completadas = filteredTasks.filter(t => t.completed);
@@ -529,6 +532,20 @@ function AppContent() {
 
                     return (
                       <>
+                        {/* SECCIÓN MAESTRA: TODAS LAS TAREAS PENDIENTES */}
+                        {todasLasPendientes.length > 0 && (
+                          <div className="grupo-global" style={{ marginBottom: '40px' }}>
+                            <h3 style={{ color: '#fff', fontSize: '15px', textTransform: 'uppercase', letterSpacing: '1px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px', marginBottom: '15px' }}>
+                              🌟 Todas las Tareas Pendientes
+                            </h3>
+                            <div className="tareas-lista">
+                              {todasLasPendientes.map(task => (
+                                <TaskItem key={task.id} task={task} onToggle={(id, c) => toggleTask(id, c, triggerConfetti)} onDelete={deleteTask} onEdit={handleEditTask} />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
                         {/* RENDER DATE-GROUPED PENDING TASKS */}
                         {fechasOrdenadas.length > 0 ? (
                           fechasOrdenadas.map((fecha) => (
