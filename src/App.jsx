@@ -462,6 +462,9 @@ function AppContent() {
                 <div style={{ padding: '0 20px' }}>
                   {(() => {
                     // 1. Separate pending and completed, adding Date Filtering
+                    console.log("🔍 Estado global 'tasks' actual:", filteredTasks);
+                    console.log("📅 Fecha seleccionada (selectedDate):", selectedDate);
+
                     const isSameDayLocale = (date1, date2) => {
                       if (!date1 || !date2) return false;
                       const d1 = new Date(date1);
@@ -474,14 +477,19 @@ function AppContent() {
                     const pendientes = filteredTasks.filter(task => {
                       if (task.completed) return false;
 
-                      // If task has no date, show it only if user selected "Today"
-                      if (!task.due_date) {
-                        return isSameDayLocale(new Date(), selectedDate);
+                      // Si no hay fecha seleccionada en el calendario, NO ocultes nada, muestra todo para probar
+                      if (!selectedDate) return true;
+
+                      // Comparación segura (ignora horas y zonas horarias, previniendo errores de null)
+                      if (task.due_date) {
+                        return isSameDayLocale(task.due_date, selectedDate);
                       }
 
-                      // Otherwise, strictly match the clicked calendar date
-                      return isSameDayLocale(task.due_date, selectedDate);
+                      // Si la tarea NO tiene fecha (due_date es null), mostrarla por defecto
+                      return true;
                     });
+
+                    console.log("✅ Tareas pendientes que pasaron el filtro:", pendientes);
 
                     const completadas = filteredTasks.filter(t => t.completed);
 

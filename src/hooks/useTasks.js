@@ -16,14 +16,26 @@ export const useTasks = (session, showToast, onTaskComplete) => {
     // Initial Fetch
     const fetchTasks = useCallback(async (userId) => {
         setLoading(true);
-        const { data, error } = await supabase.from('tasks').select('*').eq('user_id', userId);
-        if (error) {
-            console.error("ERROR LEYENDO TAREAS:", error.message, error.details);
+        try {
+            const { data, error } = await supabase
+                .from('tasks')
+                .select('*')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+
+            console.log("📥 Datos recibidos de Supabase:", data);
+
+            if (data) {
+                setTasks(data);
+            }
+        } catch (error) {
+            console.error("❌ ERROR LEYENDO TAREAS:", error.message, error.details);
             alert("Error al cargar tareas: " + error.message);
-        } else {
-            setTasks(data || []);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     }, []);
 
     // Sincronización Real-time (Cross-Device)
