@@ -267,7 +267,7 @@ export default function TaskItem({
 
         <div className="task-content">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', paddingRight: '1rem', flex: 1 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', paddingRight: '1rem', flex: 1, minWidth: 0 }}>
               <p className="task-title">{task.title}</p>
               {task.description && (
                 <p className="task-description" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginTop: '4px', marginBottom: '8px', lineHeight: '1.4' }}>
@@ -344,7 +344,7 @@ export default function TaskItem({
               )}
             </div>
             {/* Priority Badge, Countdown, Edit & Delete */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0, whiteSpace: 'nowrap' }}>
               {!task.completed && (() => {
                 const countdown = getTimeRemaining(task.due_date);
                 return countdown ? (
@@ -456,7 +456,7 @@ export default function TaskItem({
         @keyframes drawCheck { to { stroke-dashoffset: 0; } }
 
         .task-content { flex: 1; min-width: 0; }
-        .task-title { font-weight: 600; font-size: 1.05rem; color: var(--text-primary); transition: all var(--transition-normal); word-break: break-word; }
+        .task-title { font-weight: 600; font-size: 1.05rem; color: var(--text-primary); transition: all var(--transition-normal); word-wrap: break-word; overflow-wrap: break-word; }
         .task-description { font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.25rem; margin-bottom: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         
         /* Badges */
