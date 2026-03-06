@@ -34,7 +34,7 @@ const getTimeRemaining = (dueDate) => {
 
 export default function TaskItem({
   task, onToggle, onDelete, onEdit, onFocus,
-  onToggleSubtask, onUpdateSubtask, onDeleteSubtask, onSaveAiNotes
+  onToggleSubtask, onUpdateSubtask, onDeleteSubtask, onSaveAiNotes, onAddSubtasksLocally
 }) {
   const [isSwiping, setIsSwiping] = useState(false);
   const [swipeOffset, setSwipeOffset] = useState(0);
@@ -75,7 +75,9 @@ export default function TaskItem({
         completed: false
       }));
 
-      await supabase.from('subtasks').insert(subtasksToInsert);
+      const { data, error } = await supabase.from('subtasks').insert(subtasksToInsert).select();
+      if (error) throw error;
+      if (onAddSubtasksLocally && data) onAddSubtasksLocally(task.id, data);
     } catch (err) {
       console.error("Error en AI Breakdown:", err);
       alert("Error al desglosar tarea: " + err.message);
@@ -117,6 +119,15 @@ export default function TaskItem({
   const [showPomodoro, setShowPomodoro] = useState(false);
   const [pomodoroTime, setPomodoroTime] = useState(25 * 60);
   const [isPomodoroRunning, setIsPomodoroRunning] = useState(false);
+
+  useEffect(() => {
+    if (showPomodoro) {
+      setIsPomodoroRunning(true);
+    } else {
+      setIsPomodoroRunning(false);
+      setPomodoroTime(25 * 60);
+    }
+  }, [showPomodoro]);
 
   useEffect(() => {
     let interval = null;

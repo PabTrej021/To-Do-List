@@ -1,6 +1,6 @@
 import TaskItem from './TaskItem';
 
-export default function TaskList({ tasks, onToggle, onDelete, onEdit, onFocus, onToggleSubtask, onUpdateSubtask, onDeleteSubtask, onSaveAiNotes }) {
+export default function TaskList({ tasks, onToggle, onDelete, onEdit, onFocus, onToggleSubtask, onUpdateSubtask, onDeleteSubtask, onSaveAiNotes, onAddSubtasksLocally }) {
     if (tasks.length === 0) {
         return (
             <div className="empty-state">
@@ -47,6 +47,7 @@ export default function TaskList({ tasks, onToggle, onDelete, onEdit, onFocus, o
                     onUpdateSubtask={onUpdateSubtask}
                     onDeleteSubtask={onDeleteSubtask}
                     onSaveAiNotes={onSaveAiNotes}
+                    onAddSubtasksLocally={onAddSubtasksLocally}
                 />
             ))}
 
@@ -66,6 +67,7 @@ export default function TaskList({ tasks, onToggle, onDelete, onEdit, onFocus, o
                                 onUpdateSubtask={onUpdateSubtask}
                                 onDeleteSubtask={onDeleteSubtask}
                                 onSaveAiNotes={onSaveAiNotes}
+                                onAddSubtasksLocally={onAddSubtasksLocally}
                             />
                         ))}
                     </div>

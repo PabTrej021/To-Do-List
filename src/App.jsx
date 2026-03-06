@@ -63,6 +63,45 @@ const SmartGreeting = ({ tasksCount }) => {
   );
 };
 
+// Zen Mode Auto-Start Timer
+const ZenModeModal = ({ task, onClose }) => {
+  const [timeLeft, setTimeLeft] = useState(25 * 60);
+
+  useEffect(() => {
+    if (timeLeft <= 0) return;
+    const interval = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
+    return () => clearInterval(interval);
+  }, [timeLeft]);
+
+  const mins = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+  const secs = (timeLeft % 60).toString().padStart(2, '0');
+
+  return (
+    <div className="focus-mode-cinematic" style={{
+      position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+      backgroundColor: '#000', zIndex: 999999, display: 'flex',
+      flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: '2rem', animation: 'fadeInZen 0.5s ease-out forwards'
+    }}>
+      <div style={{ position: 'absolute', top: 0, left: 0, width: '100vw', height: '100vh', background: 'radial-gradient(circle at center, rgba(191,90,242,0.15) 0%, #000 70%)', zIndex: -1 }}></div>
+
+      <p style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.3em', marginBottom: '2rem' }}>MODO ENFOQUE</p>
+      <h2 style={{ fontSize: '3rem', color: 'white', textAlign: 'center', maxWidth: '800px', marginBottom: '3rem', textShadow: '0 0 30px rgba(255,255,255,0.3)', lineHeight: 1.3 }}>{task.title}</h2>
+
+      <div style={{ fontSize: '6rem', fontWeight: 800, fontFamily: 'monospace', color: 'var(--accent-color)', textShadow: '0 0 40px var(--accent-color)', marginBottom: '4rem', letterSpacing: '0.1em' }}>
+        {mins}:{secs}
+      </div>
+
+      <button onClick={onClose} style={{
+        padding: '1rem 3rem', borderRadius: '50px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.3)', fontSize: '1.2rem', fontWeight: 700, cursor: 'pointer', backdropFilter: 'blur(10px)', transition: 'all 0.3s'
+      }}>
+        Salir del Modo Enfoque
+      </button>
+      <style>{`@keyframes fadeInZen { from { opacity: 0; } to { opacity: 1; } }`}</style>
+    </div>
+  );
+};
+
 function AppContent() {
   const { t } = useI18n();
   const [session, setSession] = useState(null);
@@ -122,7 +161,7 @@ function AppContent() {
   };
 
   // Use tasks Hook
-  const { tasks, loading, addTask, toggleTask, deleteTask, undoDelete, deletedTaskCache, clearCompleted } = useTasks(session, showToast, () => addXp(25));
+  const { tasks, loading, addTask, toggleTask, deleteTask, undoDelete, deletedTaskCache, clearCompleted, toggleSubtask, updateSubtask, deleteSubtask, saveAiNotes, addSubtasksLocally } = useTasks(session, showToast, () => addXp(25));
 
   // Session & Data Fetching
   useEffect(() => {
@@ -387,30 +426,7 @@ function AppContent() {
 
           {zenMode && (() => {
             const zenTask = typeof zenMode === 'object' ? zenMode : filteredTasks.filter(t => !t.completed)[0];
-            return zenTask ? (
-              <div className="focus-mode-cinematic" style={{
-                position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
-                backgroundColor: '#000', zIndex: 999999, display: 'flex',
-                flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                padding: '2rem', animation: 'fadeInZen 0.5s ease-out forwards'
-              }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, width: '100vw', height: '100vh', background: 'radial-gradient(circle at center, rgba(191,90,242,0.15) 0%, #000 70%)', zIndex: -1 }}></div>
-
-                <p style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.3em', marginBottom: '2rem' }}>MODO ENFOQUE</p>
-                <h2 style={{ fontSize: '3rem', color: 'white', textAlign: 'center', maxWidth: '800px', marginBottom: '3rem', textShadow: '0 0 30px rgba(255,255,255,0.3)', lineHeight: 1.3 }}>{zenTask.title}</h2>
-
-                <div style={{ fontSize: '6rem', fontWeight: 800, fontFamily: 'monospace', color: 'var(--accent-color)', textShadow: '0 0 40px var(--accent-color)', marginBottom: '4rem', letterSpacing: '0.1em' }}>
-                  25:00
-                </div>
-
-                <button onClick={() => setZenMode(false)} style={{
-                  padding: '1rem 3rem', borderRadius: '50px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.3)', fontSize: '1.2rem', fontWeight: 700, cursor: 'pointer', backdropFilter: 'blur(10px)', transition: 'all 0.3s'
-                }}>
-                  Salir del Modo Enfoque
-                </button>
-                <style>{`@keyframes fadeInZen { from { opacity: 0; } to { opacity: 1; } }`}</style>
-              </div>
-            ) : null;
+            return zenTask ? <ZenModeModal task={zenTask} onClose={() => setZenMode(false)} /> : null;
           })()}
 
           {/* Desktop Navigation Bar (Only visible on wide screens) */}
@@ -568,7 +584,7 @@ function AppContent() {
                                 {fecha.includes('Sin Fecha') && '📥'}
                                 {fecha}
                               </h3>
-                              <TaskList tasks={tareasAgrupadas[fecha]} onToggle={toggleTask} onDelete={deleteTask} onEdit={handleEditTask} onFocus={(task) => setZenMode(task)} />
+                              <TaskList tasks={tareasAgrupadas[fecha]} onToggle={toggleTask} onDelete={deleteTask} onEdit={handleEditTask} onFocus={(task) => setZenMode(task)} onToggleSubtask={toggleSubtask} onUpdateSubtask={updateSubtask} onDeleteSubtask={deleteSubtask} onSaveAiNotes={saveAiNotes} onAddSubtasksLocally={addSubtasksLocally} />
                             </div>
                           ))
                         ) : (
@@ -590,7 +606,7 @@ function AppContent() {
                             </h3>
                             <div className="tareas-lista">
                               {todasLasPendientes.map(task => (
-                                <TaskItem key={task.id} task={task} onToggle={toggleTask} onDelete={deleteTask} onEdit={handleEditTask} onFocus={(task) => setZenMode(task)} />
+                                <TaskItem key={task.id} task={task} onToggle={toggleTask} onDelete={deleteTask} onEdit={handleEditTask} onFocus={(task) => setZenMode(task)} onToggleSubtask={toggleSubtask} onUpdateSubtask={updateSubtask} onDeleteSubtask={deleteSubtask} onSaveAiNotes={saveAiNotes} onAddSubtasksLocally={addSubtasksLocally} />
                               ))}
                             </div>
                           </div>
@@ -616,7 +632,7 @@ function AppContent() {
                                 Vaciar
                               </button>
                             </div>
-                            <TaskList tasks={completadas} onToggle={(id, c) => toggleTask(id, c, triggerConfetti)} onDelete={deleteTask} onEdit={handleEditTask} />
+                            <TaskList tasks={completadas} onToggle={(id, c) => toggleTask(id, c, triggerConfetti)} onDelete={deleteTask} onEdit={handleEditTask} onToggleSubtask={toggleSubtask} onUpdateSubtask={updateSubtask} onDeleteSubtask={deleteSubtask} onSaveAiNotes={saveAiNotes} onAddSubtasksLocally={addSubtasksLocally} />
                           </div>
                         )}
                       </>

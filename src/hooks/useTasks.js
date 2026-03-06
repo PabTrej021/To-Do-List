@@ -221,6 +221,15 @@ export const useTasks = (session, showToast, onTaskComplete) => {
         }
     };
 
+    const addSubtasksLocally = (taskId, newSubtasks) => {
+        setTasks(prev => prev.map(t => {
+            if (t.id === taskId) {
+                return { ...t, subtasks: [...(t.subtasks || []), ...newSubtasks] };
+            }
+            return t;
+        }));
+    };
+
     // Soft Delete (Undo)
     const deleteTask = (id) => {
         triggerDelete();
@@ -301,6 +310,7 @@ export const useTasks = (session, showToast, onTaskComplete) => {
         toggleSubtask,
         updateSubtask,
         deleteSubtask,
-        saveAiNotes
+        saveAiNotes,
+        addSubtasksLocally
     };
 };
