@@ -17,7 +17,12 @@ export const useTasks = (session, showToast, onTaskComplete) => {
     const fetchTasks = useCallback(async (userId) => {
         setLoading(true);
         const { data, error } = await supabase.from('tasks').select('*').eq('user_id', userId);
-        if (!error) setTasks(data || []);
+        if (error) {
+            console.error("ERROR LEYENDO TAREAS:", error.message, error.details);
+            alert("Error al cargar tareas: " + error.message);
+        } else {
+            setTasks(data || []);
+        }
         setLoading(false);
     }, []);
 
@@ -75,7 +80,8 @@ export const useTasks = (session, showToast, onTaskComplete) => {
             if (session) {
                 const { error } = await supabase.from('tasks').update({ title, description, due_date: dueDate, category }).eq('id', updateId);
                 if (error) {
-                    console.error('Error de Supabase al actualizar tarea (RLS/Policies):', error);
+                    console.error('ERROR ACTUALIZANDO TAREA:', error.message, error.details);
+                    alert("Error al actualizar tarea: " + error.message);
                     fetchTasks(session.user.id); // Re-fetch para revertir si falló
                 }
             }
@@ -106,10 +112,11 @@ export const useTasks = (session, showToast, onTaskComplete) => {
                 due_date: newTask.due_date,
                 priority: newTask.priority,
                 category: newTask.category
-            }]);
+            }]).select();
 
             if (error) {
-                console.error('Error de Supabase al insertar tarea (RLS/Policies):', error);
+                console.error("ERROR GUARDANDO TAREA:", error.message, error.details);
+                alert("Error al guardar: " + error.message);
                 fetchTasks(session.user.id); // Re-fetch para revertir
             }
         }
@@ -136,7 +143,8 @@ export const useTasks = (session, showToast, onTaskComplete) => {
         if (session) {
             const { error } = await supabase.from('tasks').update({ completed: isCompleting }).eq('id', id);
             if (error) {
-                console.error('Error de Supabase al completar tarea:', error);
+                console.error("ERROR AL COMPLETAR TAREA:", error.message, error.details);
+                alert("Error al completar la tarea: " + error.message);
                 fetchTasks(session.user.id);
             }
         }
@@ -161,7 +169,8 @@ export const useTasks = (session, showToast, onTaskComplete) => {
             if (session) {
                 const { error } = await supabase.from('tasks').delete().eq('id', id);
                 if (error) {
-                    console.error('Error de Supabase al eliminar tarea:', error);
+                    console.error("ERROR AL ELIMINAR TAREA:", error.message, error.details);
+                    alert("Error al eliminar la tarea: " + error.message);
                     fetchTasks(session.user.id);
                 }
             }
@@ -200,7 +209,8 @@ export const useTasks = (session, showToast, onTaskComplete) => {
         if (session) {
             const { error } = await supabase.from('tasks').delete().in('id', completedIds);
             if (error) {
-                console.error('Error de Supabase al vaciar completadas:', error);
+                console.error("ERROR AL VACIAR TAREAS:", error.message, error.details);
+                alert("Error al vaciar tareas completadas: " + error.message);
                 fetchTasks(session.user.id);
             }
         }
