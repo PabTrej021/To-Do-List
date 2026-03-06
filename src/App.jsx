@@ -489,9 +489,6 @@ function AppContent() {
                       return true;
                     });
 
-                    // SECCIÓN MAESTRA: Todas las tareas que no estén completadas (Sin importar el filtro de fecha)
-                    const todasLasPendientes = filteredTasks.filter(task => !task.completed);
-
                     console.log("✅ Tareas pendientes que pasaron el filtro:", pendientes);
 
                     const completadas = filteredTasks.filter(t => t.completed);
@@ -530,22 +527,17 @@ function AppContent() {
                       return 0;
                     });
 
+                    // 3. SECCIÓN GLOBAL: Calcular y Ordenar TODAS las tareas pendientes
+                    const todasLasPendientes = filteredTasks
+                      .filter(task => !task.completed)
+                      .sort((a, b) => {
+                        if (!a.due_date) return 1;
+                        if (!b.due_date) return -1;
+                        return new Date(a.due_date) - new Date(b.due_date);
+                      });
+
                     return (
                       <>
-                        {/* SECCIÓN MAESTRA: TODAS LAS TAREAS PENDIENTES */}
-                        {todasLasPendientes.length > 0 && (
-                          <div className="grupo-global" style={{ marginBottom: '40px' }}>
-                            <h3 style={{ color: '#fff', fontSize: '15px', textTransform: 'uppercase', letterSpacing: '1px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px', marginBottom: '15px' }}>
-                              🌟 Todas las Tareas Pendientes
-                            </h3>
-                            <div className="tareas-lista">
-                              {todasLasPendientes.map(task => (
-                                <TaskItem key={task.id} task={task} onToggle={(id, c) => toggleTask(id, c, triggerConfetti)} onDelete={deleteTask} onEdit={handleEditTask} />
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
                         {/* RENDER DATE-GROUPED PENDING TASKS */}
                         {fechasOrdenadas.length > 0 ? (
                           fechasOrdenadas.map((fecha) => (
@@ -568,12 +560,26 @@ function AppContent() {
                         ) : (
                           !loading && tasks.length === 0 && (
                             <div style={{ textAlign: 'center', marginTop: '2rem', padding: '2rem', background: 'var(--glass-bg)', border: '1px dashed var(--glass-border)', borderRadius: '15px' }}>
-                              <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontWeight: 600 }}>No tienes tareas pendientes. ¡A descansar! 🎉</p>
+                              <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontWeight: 600 }}>No hay tareas para esta fecha. ¡Libre de estrés! 🎉</p>
                               <button onClick={loadEngineeringTemplates} className="btn-add" style={{ margin: '0 auto', fontSize: '0.9rem' }}>
                                 Cargar Prácticas Base (Ingeniería)
                               </button>
                             </div>
                           )
+                        )}
+
+                        {/* 2º TODAS LAS TAREAS PENDIENTES (GLOBAL) */}
+                        {todasLasPendientes.length > 0 && (
+                          <div className="grupo-global" style={{ marginTop: '40px', marginBottom: '40px' }}>
+                            <h3 style={{ color: '#fff', fontSize: '15px', textTransform: 'uppercase', letterSpacing: '1px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px', marginBottom: '15px' }}>
+                              🌟 Todas las Tareas Pendientes
+                            </h3>
+                            <div className="tareas-lista">
+                              {todasLasPendientes.map(task => (
+                                <TaskItem key={task.id} task={task} onToggle={(id, c) => toggleTask(id, c, triggerConfetti)} onDelete={deleteTask} onEdit={handleEditTask} />
+                              ))}
+                            </div>
+                          </div>
                         )}
 
                         {/* COMPLETED SECTION */}

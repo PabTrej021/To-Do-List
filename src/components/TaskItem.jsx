@@ -180,6 +180,11 @@ export default function TaskItem({ task, onToggle, onDelete, onEdit }) {
                   {task.description}
                 </p>
               )}
+              {task.due_date && (
+                <span className="task-date-badge" style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', gap: '5px', marginTop: '6px' }}>
+                  📅 {new Date(task.due_date).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })}
+                </span>
+              )}
             </div>
             {/* Priority Badge, Countdown & Edit */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
