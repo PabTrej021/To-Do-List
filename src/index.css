@@ -98,29 +98,35 @@ body {
   position: relative;
 }
 
-/* TIME-BASED BG CLASSIFIERS */
-body.time-morning .blob-1 {
-  background: linear-gradient(135deg, #ff9500, #ffcc00);
+/* TIME-BASED BG CLASSIFIERS (Dynamic Orbs) */
+body.theme-morning .blob-1 {
+  background: linear-gradient(135deg, #ffb347, #ffcc33);
+  /* Ámbar */
 }
 
-body.time-morning .blob-2 {
-  background: linear-gradient(135deg, #32ade6, #34c759);
+body.theme-morning .blob-2 {
+  background: linear-gradient(135deg, #ff9a9e, #fecfef);
+  /* Rosa */
 }
 
-body.time-afternoon .blob-1 {
-  background: linear-gradient(135deg, #ff2a5f, #ff719a);
+body.theme-afternoon .blob-1 {
+  background: linear-gradient(135deg, #32ade6, #007aff);
+  /* Azul */
 }
 
-body.time-afternoon .blob-2 {
-  background: linear-gradient(135deg, #5e5ce6, #bf5af2);
+body.theme-afternoon .blob-2 {
+  background: linear-gradient(135deg, #00f5d4, #00bbf9);
+  /* Turquesa */
 }
 
-body.time-evening .blob-1 {
-  background: linear-gradient(135deg, #1c1c1e, #5e5ce6);
+body.theme-night .blob-1 {
+  background: linear-gradient(135deg, #bf5af2, #5e5ce6);
+  /* Púrpura */
 }
 
-body.time-evening .blob-2 {
-  background: linear-gradient(135deg, #000000, #32ade6);
+body.theme-night .blob-2 {
+  background: linear-gradient(135deg, #1c1c1e, #3a0ca3);
+  /* Índigo oscuro */
 }
 
 /* ========================================= */

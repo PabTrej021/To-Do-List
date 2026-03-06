@@ -1,6 +1,6 @@
 import TaskItem from './TaskItem';
 
-export default function TaskList({ tasks, onToggle, onDelete, onEdit }) {
+export default function TaskList({ tasks, onToggle, onDelete, onEdit, onFocus }) {
     if (tasks.length === 0) {
         return (
             <div className="empty-state">

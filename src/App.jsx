@@ -40,6 +40,29 @@ function getUserTitleAndLevel(xp) {
   return { level: 1, title: 'Novato del Enfoque', color: '#8e8e93', accent: 'linear-gradient(135deg, #ff2d55, #ff719a)' };
 }
 
+// Smart Greeting Component
+const SmartGreeting = ({ tasksCount }) => {
+  let message = '';
+  let sub = '';
+  if (tasksCount === 0) {
+    message = '¡Boom! Has limpiado tu día. 🎮';
+    sub = 'Ve a tomar un descanso, te lo ganaste.';
+  } else if (tasksCount >= 1 && tasksCount <= 4) {
+    message = '¡Vamos! Estás a nada de terminar el día. 🔥';
+    sub = 'Casi en la línea de meta.';
+  } else {
+    message = 'Tranquilo, respira. 🧘‍♂️';
+    sub = 'Elige solo una para empezar, tal vez avanzar con Ecuaciones Diferenciales o algo de Graficación, y luego toma un descanso.';
+  }
+
+  return (
+    <div style={{ padding: '0 20px', marginTop: '1rem', animation: 'fadeIn 0.5s ease-out' }}>
+      <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'white', marginBottom: '0.4rem', textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>{message}</h2>
+      <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem', lineHeight: 1.5, maxWidth: '600px' }}>{sub}</p>
+    </div>
+  );
+};
+
 function AppContent() {
   const { t } = useI18n();
   const [session, setSession] = useState(null);
@@ -86,9 +109,9 @@ function AppContent() {
 
     // 2. Time-Based Background 
     const hour = new Date().getHours();
-    let timeClass = 'time-evening';
-    if (hour >= 5 && hour < 12) timeClass = 'time-morning';
-    else if (hour >= 12 && hour < 18) timeClass = 'time-afternoon';
+    let timeClass = 'theme-night';
+    if (hour >= 6 && hour < 12) timeClass = 'theme-morning';
+    else if (hour >= 12 && hour < 19) timeClass = 'theme-afternoon';
 
     document.body.classList.add(timeClass);
   }, []);
@@ -363,39 +386,27 @@ function AppContent() {
           />
 
           {zenMode && (() => {
-            const zenTask = filteredTasks.filter(t => !t.completed)[0];
+            const zenTask = typeof zenMode === 'object' ? zenMode : filteredTasks.filter(t => !t.completed)[0];
             return zenTask ? (
-              <div className="zen-mode-overlay" style={{
+              <div className="focus-mode-cinematic" style={{
                 position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
-                backgroundColor: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(30px)', zIndex: 9999, display: 'flex',
+                backgroundColor: '#000', zIndex: 999999, display: 'flex',
                 flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                 padding: '2rem', animation: 'fadeInZen 0.5s ease-out forwards'
               }}>
-                <button
-                  onClick={() => setZenMode(false)}
-                  style={{
-                    position: 'absolute', top: '2rem', right: '2rem',
-                    background: 'var(--glass-bg)', border: '1px solid var(--glass-border)',
-                    color: 'white', padding: '0.6rem 1.2rem', borderRadius: '30px',
-                    fontWeight: '700', cursor: 'pointer', transition: 'all 0.3s'
-                  }}
-                >
-                  SALIR
-                </button>
+                <div style={{ position: 'absolute', top: 0, left: 0, width: '100vw', height: '100vh', background: 'radial-gradient(circle at center, rgba(191,90,242,0.15) 0%, #000 70%)', zIndex: -1 }}></div>
 
-                <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '1rem' }}>MODO ENFOQUE</p>
-                <h2 style={{ fontSize: '2rem', marginBottom: '2.5rem', textAlign: 'center', color: 'white', maxWidth: '500px', lineHeight: 1.4 }}>{zenTask.title}</h2>
+                <p style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.3em', marginBottom: '2rem' }}>MODO ENFOQUE</p>
+                <h2 style={{ fontSize: '3rem', color: 'white', textAlign: 'center', maxWidth: '800px', marginBottom: '3rem', textShadow: '0 0 30px rgba(255,255,255,0.3)', lineHeight: 1.3 }}>{zenTask.title}</h2>
 
-                <button
-                  onClick={() => { toggleTask(zenTask.id, zenTask.completed, triggerConfetti); setTimeout(() => setZenMode(false), 800); }}
-                  style={{
-                    padding: '1rem 2.5rem', borderRadius: '50px', fontSize: '1.1rem', fontWeight: 800,
-                    background: 'linear-gradient(135deg, var(--accent-color), #ff719a)', color: 'white',
-                    border: 'none', cursor: 'pointer', boxShadow: '0 8px 30px rgba(255,45,85,0.5)',
-                    transition: 'all 0.3s', letterSpacing: '0.05em'
-                  }}
-                >
-                  ✓ ¡Completar y Volver!
+                <div style={{ fontSize: '6rem', fontWeight: 800, fontFamily: 'monospace', color: 'var(--accent-color)', textShadow: '0 0 40px var(--accent-color)', marginBottom: '4rem', letterSpacing: '0.1em' }}>
+                  25:00
+                </div>
+
+                <button onClick={() => setZenMode(false)} style={{
+                  padding: '1rem 3rem', borderRadius: '50px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.3)', fontSize: '1.2rem', fontWeight: 700, cursor: 'pointer', backdropFilter: 'blur(10px)', transition: 'all 0.3s'
+                }}>
+                  Salir del Modo Enfoque
                 </button>
                 <style>{`@keyframes fadeInZen { from { opacity: 0; } to { opacity: 1; } }`}</style>
               </div>
@@ -539,6 +550,8 @@ function AppContent() {
 
                     return (
                       <>
+                        <SmartGreeting tasksCount={pendientes.length} />
+
                         {/* RENDER DATE-GROUPED PENDING TASKS */}
                         {fechasOrdenadas.length > 0 ? (
                           fechasOrdenadas.map((fecha) => (
@@ -555,7 +568,7 @@ function AppContent() {
                                 {fecha.includes('Sin Fecha') && '📥'}
                                 {fecha}
                               </h3>
-                              <TaskList tasks={tareasAgrupadas[fecha]} onToggle={(id, c) => toggleTask(id, c, triggerConfetti)} onDelete={deleteTask} onEdit={handleEditTask} />
+                              <TaskList tasks={tareasAgrupadas[fecha]} onToggle={toggleTask} onDelete={deleteTask} onEdit={handleEditTask} onFocus={(task) => setZenMode(task)} />
                             </div>
                           ))
                         ) : (
@@ -577,7 +590,7 @@ function AppContent() {
                             </h3>
                             <div className="tareas-lista">
                               {todasLasPendientes.map(task => (
-                                <TaskItem key={task.id} task={task} onToggle={(id, c) => toggleTask(id, c, triggerConfetti)} onDelete={deleteTask} onEdit={handleEditTask} />
+                                <TaskItem key={task.id} task={task} onToggle={toggleTask} onDelete={deleteTask} onEdit={handleEditTask} onFocus={(task) => setZenMode(task)} />
                               ))}
                             </div>
                           </div>

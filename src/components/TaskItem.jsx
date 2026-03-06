@@ -1,10 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
+import confetti from 'canvas-confetti';
+import useSound from 'use-sound';
 
 const CheckIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className="check-svg"><path d="M20 6 9 17l-5-5" /></svg>;
 const TrashIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>;
 const CheckCircleIcon = () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" /></svg>;
 const PencilIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /><path d="m15 5 4 4" /></svg>;
 const TimerIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>;
+const FocusIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="3" /></svg>;
 
 // Base64 short pop sound for completion - Replaced directly with Web Audio API
 
@@ -24,7 +27,7 @@ const getTimeRemaining = (dueDate) => {
   return { text: `${diffMins}m 🔥`, color: '#ff3b30', urgent: true };
 };
 
-export default function TaskItem({ task, onToggle, onDelete, onEdit }) {
+export default function TaskItem({ task, onToggle, onDelete, onEdit, onFocus }) {
   const [isSwiping, setIsSwiping] = useState(false);
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -83,8 +86,22 @@ export default function TaskItem({ task, onToggle, onDelete, onEdit }) {
     }
   };
 
+  const [playComplete] = useSound('/sounds/complete.mp3', { volume: 0.5 });
+  const [playSwoosh] = useSound('/sounds/swoosh.mp3', { volume: 0.5 });
+
   const handleToggle = () => {
-    if (!task.completed) playSound();
+    if (!task.completed) {
+      playSound(); // Fallback web audio
+      playComplete();
+      confetti({
+        particleCount: 150,
+        spread: 80,
+        origin: { y: 0.6 },
+        colors: ['#ff2d55', '#bf5af2', '#ffcc00', '#32ade6', '#34c759']
+      });
+    } else {
+      playSwoosh();
+    }
     triggerHaptic(task.completed ? 30 : [30, 50, 30]);
     onToggle(task.id, task.completed);
     setSwipeOffset(0);
@@ -210,7 +227,7 @@ export default function TaskItem({ task, onToggle, onDelete, onEdit }) {
                   {priority.charAt(0).toUpperCase() + priority.slice(1)}
                 </span>
               )}
-              {/* Pomodoro, Edit & Inline Delete (Hover on Desktop) */}
+              {/* Pomodoro, Edit, Focus & Inline Delete (Hover on Desktop) */}
               {confirmDeleteInline ? (
                 <div style={{ display: 'flex', gap: '0.4rem', animation: 'fadeIn 0.2s ease-out' }}>
                   <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteInline(false); }} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.3rem 0.5rem', borderRadius: '8px', color: '#fff', fontSize: '0.75rem', cursor: 'pointer', transition: 'all 0.2s' }}>
@@ -222,6 +239,11 @@ export default function TaskItem({ task, onToggle, onDelete, onEdit }) {
                 </div>
               ) : (
                 <div className="hover-actions" style={{ display: 'flex', gap: '0.4rem' }}>
+                  {onFocus && (
+                    <button className="edit-btn" onClick={(e) => { e.stopPropagation(); onFocus(task); }} aria-label="Modo Enfoque">
+                      <FocusIcon />
+                    </button>
+                  )}
                   <button className="edit-btn" onClick={(e) => { e.stopPropagation(); setShowPomodoro(!showPomodoro); }} aria-label="Pomodoro">
                     <TimerIcon />
                   </button>
