@@ -35,7 +35,7 @@ export default function TaskChatModal({ task, onClose }) {
                 setIsTyping(true);
                 const genAI = new GoogleGenerativeAI(apiKey);
                 const model = genAI.getGenerativeModel({
-                    model: "gemini-2.5-flash",
+                    model: "gemini-1.5-flash",
                     systemInstruction: `Eres un asistente de productividad empático y motivador. Tu objetivo es ayudar al usuario con la siguiente tarea: "${task.title}". ${task.description ? 'Contexto adicional: ' + task.description : ''} 
 Saluda al usuario y ofrécele ayuda para iniciar o destrabarse. Sé conciso, no uses formato Markdown complejo y mantén un tono conversacional amigable.`
                 });
