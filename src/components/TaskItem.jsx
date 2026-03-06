@@ -74,6 +74,7 @@ export default function TaskItem({
         title: paso,
         completed: false
       }));
+
       await supabase.from('subtasks').insert(subtasksToInsert);
     } catch (err) {
       console.error("Error en AI Breakdown:", err);
@@ -284,7 +285,7 @@ export default function TaskItem({
                 </div>
               )}
 
-              {/* Renderizado de Subtareas */}
+              {/* Nested Subtasks Loop */}
               {task.subtasks && task.subtasks.length > 0 && (
                 <div className="subtasks-container" style={{ marginLeft: '20px', marginTop: '15px', borderLeft: '2px solid rgba(255,255,255,0.1)', paddingLeft: '15px' }}>
                   {task.subtasks.sort((a, b) => new Date(a.created_at) - new Date(b.created_at)).map(subtask => (
@@ -293,7 +294,6 @@ export default function TaskItem({
                         type="checkbox"
                         checked={subtask.completed}
                         onChange={() => onToggleSubtask(subtask.id, subtask.completed)}
-                        onClick={(e) => e.stopPropagation()}
                         style={{ accentColor: 'var(--accent-color)', width: '16px', height: '16px', cursor: 'pointer' }}
                       />
                       <input
@@ -304,8 +304,8 @@ export default function TaskItem({
                         style={{ flex: 1, background: 'transparent', border: 'none', color: subtask.completed ? 'rgba(255,255,255,0.4)' : '#fff', textDecoration: subtask.completed ? 'line-through' : 'none', fontSize: '13px', outline: 'none' }}
                       />
                       {/* Botón sutil para eliminar subtarea */}
-                      <button onClick={(e) => { e.stopPropagation(); onDeleteSubtask(subtask.id); }} style={{ background: 'none', border: 'none', color: 'rgba(255,60,60,0.6)', cursor: 'pointer', fontSize: '12px' }}>
-                        🗑️
+                      <button onClick={(e) => { e.stopPropagation(); onDeleteSubtask(subtask.id); }} style={{ background: 'none', border: 'none', color: 'rgba(255,60,60,0.6)', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.2rem' }}>
+                        <TrashIcon width="14" height="14" />
                       </button>
                     </div>
                   ))}
