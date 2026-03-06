@@ -91,24 +91,18 @@ Saluda al usuario, menciona su tarea y ofrécele ayuda para iniciar o destrabars
     };
 
     return (
-        <div className="modal-overlay animate-enter" style={{ backdropFilter: 'blur(10px)', zIndex: 999999, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onClose}>
+        <div
+            className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm p-0 md:p-4 animate-enter"
+            onClick={onClose}
+        >
 
             {/* Modal Container: Bottom Sheet on Mobile, Centered Floater on Desktop */}
             <div
-                className="chat-modal-content"
+                className="w-full h-[85vh] md:w-[500px] md:h-[600px] bg-[#14141e]/90 border border-white/10 rounded-t-3xl md:rounded-2xl shadow-2xl flex flex-col overflow-hidden transform transition-all"
                 onClick={(e) => e.stopPropagation()}
-                style={{
-                    background: 'rgba(20, 20, 30, 0.85)',
-                    border: '1px solid rgba(255,255,255,0.15)',
-                    boxShadow: '0 -10px 40px rgba(0,0,0,0.5)',
-                    backdropFilter: 'blur(20px)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    overflow: 'hidden'
-                }}
             >
                 {/* Mobile handle indicator */}
-                <div className="mobile-handle" style={{ background: 'rgba(255,255,255,0.3)', width: '40px', height: '4px', borderRadius: '4px', margin: '12px auto 0 auto', display: 'none' }}></div>
+                <div className="md:hidden bg-white/30 w-10 h-1 rounded-full mx-auto mt-3 mb-1"></div>
 
                 {/* Header */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem 1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
@@ -227,61 +221,6 @@ Saluda al usuario, menciona su tarea y ofrécele ayuda para iniciar o destrabars
                         </button>
                     </form>
                 </div>
-
-                <style>{`
-            .chat-modal-content {
-                width: 100%;
-                height: 100dvh;
-                border-radius: 0;
-            }
-            .chat-messages::-webkit-scrollbar {
-                width: 6px;
-            }
-            .chat-messages::-webkit-scrollbar-track {
-                background: rgba(255,255,255,0.02);
-            }
-            .chat-messages::-webkit-scrollbar-thumb {
-                background: rgba(255,255,255,0.1);
-                border-radius: 10px;
-            }
-            .dot-typing {
-                width: 6px;
-                height: 6px;
-                background-color: rgba(255,255,255,0.5);
-                border-radius: 50%;
-                animation: typingBlink 1.4s infinite ease-in-out both;
-            }
-            @keyframes typingBlink {
-                0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
-                40% { opacity: 1; transform: scale(1.2); }
-            }
-            
-            @media (min-width: 768px) {
-                .chat-modal-content {
-                    width: 480px;
-                    height: 600px;
-                    max-height: 85vh;
-                    border-radius: 24px;
-                }
-                .mobile-handle { display: none !important; }
-            }
-            
-            @media (max-width: 767px) {
-                .modal-overlay {
-                    align-items: flex-end !important;
-                }
-                .chat-modal-content {
-                    height: 85dvh; /* Bottom sheet height */
-                    border-top-left-radius: 24px;
-                    border-top-right-radius: 24px;
-                    border-bottom-left-radius: 0;
-                    border-bottom-right-radius: 0;
-                    border-bottom: none;
-                    animation: slideUpBottomSheet 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-                }
-                .mobile-handle { display: block !important; }
-            }
-        `}</style>
             </div>
         </div>
     );
