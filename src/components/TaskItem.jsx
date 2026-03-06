@@ -69,13 +69,12 @@ export default function TaskItem({
 
       const { data: { session } } = await supabase.auth.getSession();
 
-      for (const paso of steps) {
-        await supabase.from('subtasks').insert([{
-          task_id: task.id,
-          title: paso,
-          completed: false
-        }]);
-      }
+      const subtasksToInsert = steps.map(paso => ({
+        task_id: task.id,
+        title: paso,
+        completed: false
+      }));
+      await supabase.from('subtasks').insert(subtasksToInsert);
     } catch (err) {
       console.error("Error en AI Breakdown:", err);
       alert("Error al desglosar tarea: " + err.message);
@@ -285,29 +284,28 @@ export default function TaskItem({
                 </div>
               )}
 
-              {/* Nested Subtasks Loop */}
-              {task.subtasks?.length > 0 && (
-                <div style={{ marginTop: '0.8rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '100%' }}>
-                  {task.subtasks.sort((a, b) => new Date(a.created_at) - new Date(b.created_at)).map(sub => (
-                    <div key={sub.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(0,0,0,0.2)', padding: '0.4rem 0.6rem', borderRadius: '8px', opacity: sub.completed ? 0.6 : 1, transition: 'all 0.2s' }}>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); onToggleSubtask(sub.id, sub.completed); }}
-                        style={{ flexShrink: 0, width: '20px', height: '20px', borderRadius: '4px', border: `2px solid ${sub.completed ? 'var(--success-color)' : 'rgba(255,255,255,0.4)'}`, background: sub.completed ? 'var(--success-color)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s' }}
-                      >
-                        {sub.completed && <CheckIcon width="12" height="12" />}
-                      </button>
+              {/* Renderizado de Subtareas */}
+              {task.subtasks && task.subtasks.length > 0 && (
+                <div className="subtasks-container" style={{ marginLeft: '20px', marginTop: '15px', borderLeft: '2px solid rgba(255,255,255,0.1)', paddingLeft: '15px' }}>
+                  {task.subtasks.sort((a, b) => new Date(a.created_at) - new Date(b.created_at)).map(subtask => (
+                    <div key={subtask.id} className="subtask-item" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                      <input
+                        type="checkbox"
+                        checked={subtask.completed}
+                        onChange={() => onToggleSubtask(subtask.id, subtask.completed)}
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ accentColor: 'var(--accent-color)', width: '16px', height: '16px', cursor: 'pointer' }}
+                      />
                       <input
                         type="text"
-                        value={sub.title}
-                        onChange={(e) => onUpdateSubtask(sub.id, e.target.value)}
+                        value={subtask.title}
+                        onChange={(e) => onUpdateSubtask(subtask.id, e.target.value)}
                         onClick={(e) => e.stopPropagation()}
-                        style={{ flex: 1, background: 'transparent', border: 'none', color: 'white', fontSize: '0.85rem', textDecoration: sub.completed ? 'line-through' : 'none', outline: 'none' }}
+                        style={{ flex: 1, background: 'transparent', border: 'none', color: subtask.completed ? 'rgba(255,255,255,0.4)' : '#fff', textDecoration: subtask.completed ? 'line-through' : 'none', fontSize: '13px', outline: 'none' }}
                       />
-                      <button
-                        onClick={(e) => { e.stopPropagation(); onDeleteSubtask(sub.id); }}
-                        style={{ background: 'transparent', border: 'none', color: 'rgba(255,59,48,0.7)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.2rem' }}
-                      >
-                        <TrashIcon width="14" height="14" />
+                      {/* Botón sutil para eliminar subtarea */}
+                      <button onClick={(e) => { e.stopPropagation(); onDeleteSubtask(subtask.id); }} style={{ background: 'none', border: 'none', color: 'rgba(255,60,60,0.6)', cursor: 'pointer', fontSize: '12px' }}>
+                        🗑️
                       </button>
                     </div>
                   ))}
