@@ -49,11 +49,9 @@ Saluda al usuario y ofrécele ayuda para iniciar o destrabarse. Sé conciso, no 
 
                 setChatSession(session);
 
-                // Send a hidden initial trigger
-                const result = await session.sendMessage("Hola, acabo de abrir esta tarea. ¿Me puedes saludar brevemente?");
-                const responseText = result.response.text();
-
-                setMessages([{ role: 'model', text: responseText, id: Date.now() }]);
+                // Send a local initial trigger to save API Quota
+                const initialGreeting = `¡Hola! Veo que estás trabajando en "${task.title}". ¿En qué te puedo ayudar para empezar o destrabarte?`;
+                setMessages([{ role: 'model', text: initialGreeting, id: Date.now() }]);
                 setIsTyping(false);
 
                 // Focus input
