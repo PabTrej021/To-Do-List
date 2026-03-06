@@ -68,6 +68,8 @@ DROP POLICY IF EXISTS "Gestión total subtareas propias" ON public.subtasks;
 -- Esta política asegura que solo puedas tocar las subtareas de las tareas de las que eres dueño
 CREATE POLICY "Gestión total subtareas" ON public.subtasks AS PERMISSIVE FOR ALL USING (
     EXISTS (SELECT 1 FROM public.tasks WHERE tasks.id = subtasks.task_id AND tasks.user_id = auth.uid())
+) WITH CHECK (
+    EXISTS (SELECT 1 FROM public.tasks WHERE tasks.id = subtasks.task_id AND tasks.user_id = auth.uid())
 );
 
 

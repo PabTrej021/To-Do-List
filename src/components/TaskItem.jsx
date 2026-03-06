@@ -296,12 +296,38 @@ export default function TaskItem({
                         onChange={() => onToggleSubtask(subtask.id, subtask.completed)}
                         style={{ accentColor: 'var(--accent-color)', width: '16px', height: '16px', cursor: 'pointer' }}
                       />
-                      <input
-                        type="text"
+                      <textarea
                         value={subtask.title}
-                        onChange={(e) => onUpdateSubtask(subtask.id, e.target.value)}
+                        rows={1}
+                        onChange={(e) => {
+                          e.target.style.height = 'auto';
+                          e.target.style.height = e.target.scrollHeight + 'px';
+                          onUpdateSubtask(subtask.id, e.target.value);
+                        }}
                         onClick={(e) => e.stopPropagation()}
-                        style={{ flex: 1, background: 'transparent', border: 'none', color: subtask.completed ? 'rgba(255,255,255,0.4)' : '#fff', textDecoration: subtask.completed ? 'line-through' : 'none', fontSize: '13px', outline: 'none' }}
+                        ref={(el) => {
+                          if (el) {
+                            el.style.height = 'auto';
+                            el.style.height = el.scrollHeight + 'px';
+                          }
+                        }}
+                        style={{
+                          flex: 1,
+                          background: 'transparent',
+                          border: 'none',
+                          color: subtask.completed ? 'rgba(255,255,255,0.4)' : '#fff',
+                          textDecoration: subtask.completed ? 'line-through' : 'none',
+                          fontSize: '13px',
+                          fontFamily: 'inherit',
+                          outline: 'none',
+                          resize: 'none',
+                          overflow: 'hidden',
+                          whiteSpace: 'pre-wrap',
+                          wordWrap: 'break-word',
+                          lineHeight: '1.4',
+                          padding: 0,
+                          marginTop: '2px'
+                        }}
                       />
                       {/* Botón sutil para eliminar subtarea */}
                       <button onClick={(e) => { e.stopPropagation(); onDeleteSubtask(subtask.id); }} style={{ background: 'none', border: 'none', color: 'rgba(255,60,60,0.6)', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.2rem' }}>
