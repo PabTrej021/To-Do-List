@@ -49,7 +49,7 @@ export default function TaskItem({ task, onToggle, onDelete, onEdit, onFocus }) 
       if (!apiKey) throw new Error("API Key de Gemini no encontrada. Verifica tu archivo .env");
 
       const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
       const prompt = `Eres un experto en productividad. Divide esta tarea en 3 pasos pequeños y accionables. Tarea: '${task.title}'. Responde ÚNICAMENTE con un arreglo de strings en formato JSON válido, sin Markdown extra ni comillas invertidas. Ejemplo: ["Paso 1", "Paso 2", "Paso 3"]`;
 
