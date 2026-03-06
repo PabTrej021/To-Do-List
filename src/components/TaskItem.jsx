@@ -43,6 +43,7 @@ export default function TaskItem({
   const [tilt, setTilt] = useState({ x: 0, y: 0 }); // 3D Tilt Effect
   const [isThinking, setIsThinking] = useState(false);
   const [isCoaching, setIsCoaching] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false); // Mobile Accordion
 
   const handleAIBreakdown = async (e) => {
     e.stopPropagation();
@@ -263,7 +264,7 @@ export default function TaskItem({
 
       {/* Foreground Task Card */}
       <div
-        className={`task-card glass-panel ${task.completed ? 'completed' : ''} ${tagClass}`}
+        className={`task-card glass-panel ${task.completed ? 'completed' : ''} ${tagClass} ${isExpanded ? 'expanded' : ''}`}
         style={{
           transform: `translateX(${swipeOffset}px) perspective(1000px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
           transition: isSwiping ? 'none' : 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)'
@@ -271,85 +272,93 @@ export default function TaskItem({
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
+        onClick={() => { if (!isSwiping && swipeOffset === 0) setIsExpanded(!isExpanded); }}
       >
-        <button className="task-checkbox" onClick={handleToggle}>
-          {task.completed && <CheckIcon />}
-        </button>
+        <div className="task-checkbox-wrapper" onClick={(e) => { e.stopPropagation(); handleToggle(); }}>
+          <div className="task-checkbox">
+            {task.completed && <CheckIcon />}
+          </div>
+        </div>
 
         <div className="task-content">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', paddingRight: '1rem', flex: 1, minWidth: 0 }}>
+          <div className="task-details-row">
+            <div className="task-text-col">
               <p className="task-title">{task.title}</p>
-              {task.description && (
-                <p className="task-description" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginTop: '4px', marginBottom: '8px', lineHeight: '1.4' }}>
-                  {task.description}
-                </p>
-              )}
 
-              {/* AI Coaching Box */}
-              {task.ai_notes && (
-                <div style={{ marginTop: '0.5rem', marginBottom: '0.5rem', padding: '0.75rem', borderRadius: '12px', backgroundColor: 'rgba(191,90,242,0.1)', border: '1px solid rgba(191,90,242,0.3)', color: 'rgba(255,255,255,0.9)', fontSize: '0.85rem', lineHeight: 1.5, animation: 'fadeIn 0.5s ease-out' }}>
-                  <div style={{ color: '#bf5af2', fontWeight: 'bold', marginBottom: '0.3rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                    <BulbIcon /> Consejo AI
-                  </div>
-                  <div style={{ whiteSpace: 'pre-wrap' }}>{task.ai_notes}</div>
-                </div>
-              )}
+              <div className={`task-accordion-content ${isExpanded ? 'open' : ''}`}>
+                {task.description && (
+                  <p className="task-description" style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginTop: '4px', marginBottom: '8px', lineHeight: '1.4' }}>
+                    {task.description}
+                  </p>
+                )}
 
-              {/* Nested Subtasks Loop */}
-              {task.subtasks && task.subtasks.length > 0 && (
-                <div className="subtasks-container" style={{ marginLeft: '20px', marginTop: '15px', borderLeft: '2px solid rgba(255,255,255,0.1)', paddingLeft: '15px' }}>
-                  {task.subtasks.sort((a, b) => new Date(a.created_at) - new Date(b.created_at)).map(subtask => (
-                    <div key={subtask.id} className="subtask-item" style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '8px', width: '100%' }}>
-                      <input
-                        type="checkbox"
-                        checked={subtask.completed}
-                        onChange={() => onToggleSubtask(subtask.id, subtask.completed)}
-                        style={{ accentColor: 'var(--accent-color)', width: '16px', height: '16px', cursor: 'pointer', flexShrink: 0, marginTop: '4px' }}
-                      />
-                      <textarea
-                        value={subtask.title}
-                        rows={1}
-                        onChange={(e) => {
-                          e.target.style.height = 'auto';
-                          e.target.style.height = e.target.scrollHeight + 'px';
-                          onUpdateSubtask(subtask.id, e.target.value);
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                        ref={(el) => {
-                          if (el) {
-                            el.style.height = 'auto';
-                            el.style.height = el.scrollHeight + 'px';
-                          }
-                        }}
-                        style={{
-                          flex: 1,
-                          minWidth: 0,
-                          background: 'transparent',
-                          border: 'none',
-                          color: subtask.completed ? 'rgba(255,255,255,0.4)' : '#fff',
-                          textDecoration: subtask.completed ? 'line-through' : 'none',
-                          fontSize: '13px',
-                          fontFamily: 'inherit',
-                          textAlign: 'left',
-                          outline: 'none',
-                          resize: 'none',
-                          overflow: 'hidden',
-                          whiteSpace: 'pre-wrap',
-                          wordWrap: 'break-word',
-                          lineHeight: '1.4',
-                          padding: 0,
-                          marginTop: '2px'
-                        }}
-                      />
-                      {/* Botón sutil para eliminar subtarea */}
-                      <button onClick={(e) => { e.stopPropagation(); onDeleteSubtask(subtask.id); }} style={{ background: 'none', border: 'none', color: 'rgba(255,60,60,0.6)', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.2rem', flexShrink: 0, marginTop: '2px' }}>
-                        <TrashIcon width="14" height="14" />
-                      </button>
+                {/* AI Coaching Box */}
+                {task.ai_notes && (
+                  <div style={{ marginTop: '0.5rem', marginBottom: '0.5rem', padding: '0.75rem', borderRadius: '12px', backgroundColor: 'rgba(191,90,242,0.1)', border: '1px solid rgba(191,90,242,0.3)', color: 'rgba(255,255,255,0.9)', fontSize: '0.85rem', lineHeight: 1.5, animation: 'fadeIn 0.5s ease-out' }}>
+                    <div style={{ color: '#bf5af2', fontWeight: 'bold', marginBottom: '0.3rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <BulbIcon /> Consejo AI
                     </div>
-                  ))}
-                </div>
-              )}
+                    <div style={{ whiteSpace: 'pre-wrap' }}>{task.ai_notes}</div>
+                  </div>
+                )}
+
+                {/* Nested Subtasks Loop */}
+                {task.subtasks && task.subtasks.length > 0 && (
+                  <div className="subtasks-container" style={{ marginLeft: '20px', marginTop: '15px', borderLeft: '2px solid rgba(255,255,255,0.1)', paddingLeft: '15px' }}>
+                    {task.subtasks.sort((a, b) => new Date(a.created_at) - new Date(b.created_at)).map(subtask => (
+                      <div key={subtask.id} className="subtask-item" style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '8px', width: '100%' }}>
+                        <div style={{ width: '44px', height: '44px', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', flexShrink: 0, marginLeft: '-14px', marginTop: '-10px', paddingTop: '10px' }} onClick={(e) => { e.stopPropagation(); onToggleSubtask(subtask.id, subtask.completed); }}>
+                          <input
+                            type="checkbox"
+                            checked={subtask.completed}
+                            onChange={() => { }} // handled by parent div
+                            style={{ accentColor: 'var(--accent-color)', width: '18px', height: '18px', cursor: 'pointer', pointerEvents: 'none' }}
+                          />
+                        </div>
+                        <textarea
+                          value={subtask.title}
+                          rows={1}
+                          onChange={(e) => {
+                            e.target.style.height = 'auto';
+                            e.target.style.height = e.target.scrollHeight + 'px';
+                            onUpdateSubtask(subtask.id, e.target.value);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          ref={(el) => {
+                            if (el) {
+                              el.style.height = 'auto';
+                              el.style.height = el.scrollHeight + 'px';
+                            }
+                          }}
+                          style={{
+                            flex: 1,
+                            minWidth: 0,
+                            background: 'transparent',
+                            border: 'none',
+                            color: subtask.completed ? 'rgba(255,255,255,0.4)' : '#fff',
+                            textDecoration: subtask.completed ? 'line-through' : 'none',
+                            fontSize: '13px',
+                            fontFamily: 'inherit',
+                            textAlign: 'left',
+                            outline: 'none',
+                            resize: 'none',
+                            overflow: 'hidden',
+                            whiteSpace: 'pre-wrap',
+                            wordWrap: 'break-word',
+                            lineHeight: '1.4',
+                            padding: 0,
+                            marginTop: '2px'
+                          }}
+                        />
+                        {/* Botón sutil para eliminar subtarea */}
+                        <button onClick={(e) => { e.stopPropagation(); onDeleteSubtask(subtask.id); }} style={{ background: 'none', border: 'none', color: 'rgba(255,60,60,0.6)', cursor: 'pointer', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', width: '44px', height: '44px', flexShrink: 0, marginTop: '-6px', marginRight: '-12px', paddingTop: '6px' }}>
+                          <TrashIcon width="16" height="16" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
               {task.due_date && (
                 <span className="task-date-badge" style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', gap: '5px', marginTop: '6px' }}>
                   📅 {new Date(task.due_date).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })}
@@ -357,7 +366,7 @@ export default function TaskItem({
               )}
             </div>
             {/* Priority Badge, Countdown, Edit & Delete */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0, whiteSpace: 'nowrap' }}>
+            <div className="task-actions-col">
               {!task.completed && (() => {
                 const countdown = getTimeRemaining(task.due_date);
                 return countdown ? (
@@ -463,13 +472,30 @@ export default function TaskItem({
         .tag-study { border-left-color: var(--tag-study); box-shadow: -2px 0 10px rgba(50, 173, 230, 0.2); }
         .tag-other { border-left-color: var(--tag-other); }
 
-        .task-checkbox { flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; border: 2.5px solid var(--text-secondary); display: flex; align-items: center; justify-content: center; transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); color: white; background-color: transparent; margin-top: 0.25rem; }
+        .task-checkbox-wrapper { flex-shrink: 0; width: 44px; height: 44px; display: flex; align-items: flex-start; justify-content: center; cursor: pointer; margin-left: -8px; margin-top: -8px; padding-top: 8px; }
+        .task-checkbox { width: 28px; height: 28px; border-radius: 50%; border: 2.5px solid var(--text-secondary); display: flex; align-items: center; justify-content: center; transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); color: white; background-color: transparent; }
         .task-card.completed .task-checkbox { background-color: var(--success-color); border-color: var(--success-color); box-shadow: 0 0 15px rgba(52, 199, 89, 0.6); transform: scale(1.1); }
         .check-svg { stroke-dasharray: 24; stroke-dashoffset: 24; animation: drawCheck 0.4s 0.1s forwards ease-out; }
         @keyframes drawCheck { to { stroke-dashoffset: 0; } }
 
         .task-content { flex: 1; min-width: 0; }
-        .task-title { font-weight: 600; font-size: 1.05rem; color: var(--text-primary); transition: all var(--transition-normal); word-wrap: break-word; overflow-wrap: break-word; }
+        
+        .task-details-row { display: flex; flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+        .task-text-col { flex: 1; min-width: 0; width: 100%; }
+        .task-actions-col { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; white-space: nowrap; width: 100%; justify-content: flex-end; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.05); }
+
+        @media (min-width: 768px) {
+          .task-details-row { flex-direction: row; align-items: flex-start; gap: 1rem; }
+          .task-actions-col { width: auto; justify-content: flex-start; padding-top: 0; border-top: none; }
+          .task-checkbox-wrapper { margin-left: 0; margin-top: -2px; }
+          .task-title { font-size: 1.05rem !important; }
+        }
+
+        .task-accordion-content { display: none; margin-top: 0.5rem; }
+        .task-accordion-content.open { display: block; animation: fadeIn 0.3s ease-out; }
+        @media (min-width: 768px) { .task-accordion-content { display: block !important; } }
+
+        .task-title { font-weight: 600; font-size: 0.95rem; color: var(--text-primary); transition: all var(--transition-normal); word-wrap: break-word; overflow-wrap: break-word; }
         .task-description { font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.25rem; margin-bottom: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         
         /* Badges */
@@ -479,15 +505,16 @@ export default function TaskItem({
         .priority-low { background-color: rgba(52, 199, 89, 0.15); color: #34c759; border: 1px solid rgba(52,199,89,0.3); }
 
         /* Inline Progress */
-        .task-progress-track { width: 100%; height: 4px; background-color: var(--bg-color-secondary); border-radius: 99px; overflow: hidden; }
+        .task-progress-track { width: 100%; height: 4px; background-color: var(--bg-color-secondary); border-radius: 99px; overflow: hidden; margin-top: 0.75rem; }
         .task-progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent-color), #ffcc00); border-radius: 99px; transition: width 0.8s ease-out; }
 
-        /* Edit Button */
-        .edit-btn { background: var(--bg-color-secondary); border: 1px solid var(--glass-border); color: var(--text-secondary); border-radius: 8px; padding: 0.35rem; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all var(--transition-fast); }
-        .edit-btn:hover { color: var(--accent-color); background: var(--glass-bg); transform: scale(1.05); }
+        /* Edit Button - Zonas Tactiles ! */
+        .edit-btn { background: var(--bg-color-secondary); border: 1px solid var(--glass-border); color: var(--text-secondary); border-radius: 8px; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all var(--transition-fast); }
+        @media (min-width: 768px) { .edit-btn { min-width: 32px; min-height: 32px; padding: 0.35rem; } }
 
         /* Hover Inteligente para Escritorio */
         @media (hover: hover) and (pointer: fine) {
+          .edit-btn:hover { color: var(--accent-color); background: var(--glass-bg); transform: scale(1.05); }
           .hover-actions {
             opacity: 0;
             transform: translateX(10px);
