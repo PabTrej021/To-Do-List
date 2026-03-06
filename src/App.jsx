@@ -32,15 +32,6 @@ const isSameDay = (d1, d2) => {
     date1.getDate() === date2.getDate();
 };
 
-// Profile helpers (Local)
-function getLocalProfile(userId) {
-  const json = localStorage.getItem(`profile_${userId}`);
-  return json ? JSON.parse(json) : { xp: 0, streak: 0, lastLogin: new Date().toDateString(), lastCompletedDate: null };
-}
-function saveLocalProfile(userId, data) {
-  localStorage.setItem(`profile_${userId}`, JSON.stringify(data));
-}
-
 // Level & Title System
 function getUserTitleAndLevel(xp) {
   if (xp >= 1000) return { level: 4, title: 'Maestro del Tiempo', color: '#bf5af2', accent: 'linear-gradient(135deg, #bf5af2, #ffcc00)' };
@@ -154,61 +145,84 @@ function AppContent() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const initGamification = (userId) => {
-    const profile = getLocalProfile(userId);
-    const today = new Date().toDateString();
-    if (profile.lastLogin !== today) {
-      const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
-      if (profile.lastLogin === yesterday.toDateString()) {
-        profile.streak += 1; showToast('¡Racha Mantenida!', `Día ${profile.streak} 🔥`);
-      } else {
-        if (profile.streak > 1) showToast('Racha Perdida', 'Tu racha se reinició a 1 📉');
-        profile.streak = 1;
-      }
-      profile.lastLogin = today;
-      saveLocalProfile(userId, profile);
-    }
-    setXp(profile.xp); setStreak(profile.streak);
+  const initGamification = async (userId) => {
+    try {
+      const { data: profile, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
 
-    // Inject level-based CSS variables
-    const levelInfo = getUserTitleAndLevel(profile.xp);
-    document.documentElement.style.setProperty('--level-accent', levelInfo.accent);
-    document.documentElement.style.setProperty('--level-color', levelInfo.color);
+      let pData = profile;
+
+      if (error && error.code === 'PGRST116') {
+        // Profil no encontrado, lo creamos
+        pData = { id: userId, xp: 0, streak: 0, last_completed_date: null };
+        const { error: insertError } = await supabase.from('profiles').insert([pData]);
+        if (insertError) console.error("Error creando perfil:", insertError.message);
+      } else if (error) {
+        console.error("Error leyendo perfil de gamificación:", error.message);
+        return;
+      }
+
+      setXp(pData.xp || 0);
+      setStreak(pData.streak || 0);
+
+      const levelInfo = getUserTitleAndLevel(pData.xp || 0);
+      document.documentElement.style.setProperty('--level-accent', levelInfo.accent);
+      document.documentElement.style.setProperty('--level-color', levelInfo.color);
+    } catch (err) {
+      console.error("Error en initGamification:", err);
+    }
   };
 
-  // Smart XP: streak-aware algorithm
-  const addXp = (amount) => {
+  // Smart XP: streak-aware algorithm connected to Supabase
+  const addXp = async (amount) => {
     if (!session) return;
-    const profile = getLocalProfile(session.user.id);
-    const today = new Date().toDateString();
-    const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+    try {
+      const { data: profile, error } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+      if (error) {
+        console.error("Error cargando perfil para XP:", error.message);
+        return;
+      }
 
-    let xpGain = amount; // Base: +10
-    let newStreak = profile.streak;
+      const today = new Date().toDateString();
+      const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
 
-    if (profile.lastCompletedDate === today) {
-      // Same day: just add base XP, no streak change
-    } else if (profile.lastCompletedDate === yesterday.toDateString()) {
-      // Consecutive day: streak bonus!
-      newStreak += 1;
-      xpGain += 20; // Bonus for keeping the streak
-      showToast('🔥 Racha +1', `${newStreak} días consecutivos (+${xpGain} XP)`);
-    } else {
-      // Streak broken
-      if (newStreak > 1) showToast('📉 Racha reiniciada', 'Empezamos de nuevo');
-      newStreak = 1;
+      let xpGain = amount;
+      let newStreak = profile.streak || 0;
+
+      if (profile.last_completed_date === today) {
+        // Same day: just add base XP, no streak change
+      } else if (profile.last_completed_date === yesterday.toDateString()) {
+        // Consecutive day: streak bonus
+        newStreak += 1;
+        xpGain += 20;
+        showToast('🔥 Racha +1', `${newStreak} días consecutivos (+${xpGain} XP)`);
+      } else {
+        // Streak broken
+        if (newStreak > 1 && profile.last_completed_date) showToast('📉 Racha reiniciada', 'Empezamos de nuevo');
+        newStreak = 1;
+      }
+
+      const newXp = (profile.xp || 0) + xpGain;
+
+      // Optimistic UI Update
+      setXp(newXp);
+      setStreak(newStreak);
+
+      const levelInfo = getUserTitleAndLevel(newXp);
+      document.documentElement.style.setProperty('--level-accent', levelInfo.accent);
+      document.documentElement.style.setProperty('--level-color', levelInfo.color);
+
+      // Save to Supabase
+      const { error: updateError } = await supabase.from('profiles')
+        .update({ xp: newXp, streak: newStreak, last_completed_date: today })
+        .eq('id', session.user.id);
+
+      if (updateError) {
+        console.error("Error actualizando XP en Supabase:", updateError.message);
+        initGamification(session.user.id); // Rollback
+      }
+    } catch (err) {
+      console.error("Error general en addXp:", err);
     }
-
-    const newXp = profile.xp + xpGain;
-    const updatedProfile = { ...profile, xp: newXp, streak: newStreak, lastCompletedDate: today };
-    saveLocalProfile(session.user.id, updatedProfile);
-    setXp(newXp);
-    setStreak(newStreak);
-
-    // Update level CSS dynamically
-    const levelInfo = getUserTitleAndLevel(newXp);
-    document.documentElement.style.setProperty('--level-accent', levelInfo.accent);
-    document.documentElement.style.setProperty('--level-color', levelInfo.color);
   };
 
   const handleEditTask = (task) => {
