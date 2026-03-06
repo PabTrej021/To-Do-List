@@ -10,6 +10,7 @@ export default function TaskChatModal({ task, onClose }) {
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);
+    const [chatSession, setChatSession] = useState(null);
 
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
@@ -22,7 +23,7 @@ export default function TaskChatModal({ task, onClose }) {
     }, [messages]);
 
     useEffect(() => {
-        // Initialize Gemini Chat Session via standard generateContent
+        // Initialize Gemini Chat Session via standard startChat
         const initChat = async () => {
             try {
                 const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
@@ -33,13 +34,24 @@ export default function TaskChatModal({ task, onClose }) {
 
                 setIsTyping(true);
                 const genAI = new GoogleGenerativeAI(apiKey);
-                const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+                const model = genAI.getGenerativeModel({
+                    model: "gemini-2.5-flash",
+                    systemInstruction: `Eres un asistente de productividad empático y motivador. Tu objetivo es ayudar al usuario con la siguiente tarea: "${task.title}". ${task.description ? 'Contexto adicional: ' + task.description : ''} 
+Saluda al usuario y ofrécele ayuda para iniciar o destrabarse. Sé conciso, no uses formato Markdown complejo y mantén un tono conversacional amigable.`
+                });
 
-                const contextPrompt = `Eres un asistente de productividad empático y motivador. Tu objetivo es ayudar al usuario exclusivamente con la siguiente tarea: "${task.title}". ${task.description ? 'Contexto adicional de la tarea: ' + task.description : ''} 
-Saluda al usuario, menciona su tarea y ofrécele ayuda para iniciar o destrabarse. Sé conciso y muy amigable.`;
+                const session = model.startChat({
+                    history: [],
+                    generationConfig: {
+                        maxOutputTokens: 800,
+                    },
+                });
 
-                const result = await model.generateContent(contextPrompt);
-                const responseText = result.response.text().trim();
+                setChatSession(session);
+
+                // Send a hidden initial trigger
+                const result = await session.sendMessage("Hola, acabo de abrir esta tarea. ¿Me puedes saludar brevemente?");
+                const responseText = result.response.text();
 
                 setMessages([{ role: 'model', text: responseText, id: Date.now() }]);
                 setIsTyping(false);
@@ -59,28 +71,16 @@ Saluda al usuario, menciona su tarea y ofrécele ayuda para iniciar o destrabars
 
     const handleSendMessage = async (e) => {
         e.preventDefault();
-        if (!input.trim() || isTyping) return;
+        if (!input.trim() || !chatSession || isTyping) return;
 
         const userMessage = input.trim();
         setInput('');
-        const newMessages = [...messages, { role: 'user', text: userMessage, id: Date.now() }];
-        setMessages(newMessages);
+        setMessages(prev => [...prev, { role: 'user', text: userMessage, id: Date.now() }]);
         setIsTyping(true);
 
         try {
-            const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-            const genAI = new GoogleGenerativeAI(apiKey);
-            const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
-            // Construir el prompt a partir del historial (idéntico al método usado en la app principal)
-            let fullPrompt = `Eres un asistente de productividad empático y motivador ayudando al usuario con la tarea: "${task.title}". Sé conciso y claro en tus respuestas.\n\nHistorial de Conversación:\n`;
-            newMessages.forEach(msg => {
-                fullPrompt += `${msg.role === 'user' ? 'Usuario' : 'Asistente IA'}: ${msg.text}\n`;
-            });
-            fullPrompt += `Asistente IA:`;
-
-            const result = await model.generateContent(fullPrompt);
-            const botResponse = result.response.text().trim();
+            const result = await chatSession.sendMessage(userMessage);
+            const botResponse = result.response.text();
             setMessages(prev => [...prev, { role: 'model', text: botResponse, id: Date.now() }]);
         } catch (error) {
             console.error("Error enviando mensaje:", error);
