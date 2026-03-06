@@ -3,6 +3,7 @@ import confetti from 'canvas-confetti';
 import useSound from 'use-sound';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { supabase } from '../lib/supabase';
+import TaskChatModal from './TaskChatModal';
 
 const CheckIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className="check-svg"><path d="M20 6 9 17l-5-5" /></svg>;
 const TrashIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>;
@@ -44,6 +45,7 @@ export default function TaskItem({
   const [isThinking, setIsThinking] = useState(false);
   const [isCoaching, setIsCoaching] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false); // Mobile Accordion
+  const [isChatOpen, setIsChatOpen] = useState(false); // AI Chat Modal
 
   const handleAIBreakdown = async (e) => {
     e.stopPropagation();
@@ -402,8 +404,8 @@ export default function TaskItem({
                 <div className="hover-actions" style={{ display: 'flex', gap: '0.4rem' }}>
                   {!task.completed && (
                     <>
-                      <button className="edit-btn" onClick={handleAICoach} aria-label="Pedir Consejo AI" style={{ color: '#ffcc00', borderColor: 'rgba(255, 204, 0, 0.3)' }}>
-                        {isCoaching ? <SpinnerIcon /> : <BulbIcon />}
+                      <button className="edit-btn" onClick={(e) => { e.stopPropagation(); setIsChatOpen(true); }} aria-label="Asistente de IA" style={{ color: '#ffcc00', borderColor: 'rgba(255, 204, 0, 0.3)' }}>
+                        <BulbIcon />
                       </button>
                       <button className="edit-btn" onClick={handleAIBreakdown} aria-label="Desglose Inteligente" style={{ color: '#bf5af2', borderColor: 'rgba(191, 90, 242, 0.3)' }}>
                         {isThinking ? <SpinnerIcon /> : <SparklesIcon />}
@@ -455,6 +457,10 @@ export default function TaskItem({
           </div>
         </div>
       </div>
+
+      {isChatOpen && (
+        <TaskChatModal task={task} onClose={() => setIsChatOpen(false)} />
+      )}
 
       <style>{`
         .task-wrapper { position: relative; width: 100%; overflow: hidden; margin-bottom: 0.85rem; transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1); border-radius: var(--border-radius-lg); }

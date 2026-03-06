@@ -1,0 +1,289 @@
+import { useState, useEffect, useRef } from 'react';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
+const SendIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4Z" /><path d="M22 2 11 13" /></svg>;
+const BulbIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18h6" /><path d="M10 22h4" /><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14" /></svg>;
+const BotIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M12 8v4" /><path d="M8 12h0" /><path d="M16 12h0" /></svg>;
+const UserIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="5" /><path d="M20 21a8 8 0 0 0-16 0" /></svg>;
+
+export default function TaskChatModal({ task, onClose }) {
+    const [messages, setMessages] = useState([]);
+    const [input, setInput] = useState('');
+    const [isTyping, setIsTyping] = useState(false);
+    const [chatSession, setChatSession] = useState(null);
+
+    const messagesEndRef = useRef(null);
+    const inputRef = useRef(null);
+
+    useEffect(() => {
+        // Auto-scroll to bottom
+        if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [messages]);
+
+    useEffect(() => {
+        // Initialize Gemini Chat Session
+        const initChat = async () => {
+            try {
+                const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+                if (!apiKey) {
+                    setMessages([{ role: 'model', text: 'Error: API Key de Gemini no encontrada en .env' }]);
+                    return;
+                }
+
+                const genAI = new GoogleGenerativeAI(apiKey);
+                const model = genAI.getGenerativeModel({
+                    model: "gemini-2.5-flash",
+                    // System instructions setup the persona
+                    systemInstruction: `Eres un asistente de productividad empático y motivador. Tu objetivo es ayudar al usuario exclusivamente con la siguiente tarea: "${task.title}". ${task.description ? 'Contexto adicional de la tarea: ' + task.description : ''} 
+            Pregúntale amigablemente cómo puedes ayudarle a iniciar, proporcionales explicaciones si no entienden un concepto, o ayúdales a destrabarse. Sé conciso y usa un tono conversacional natural, evitando respuestas robóticas largas.`
+                });
+
+                const session = model.startChat({
+                    history: [],
+                    generationConfig: {
+                        maxOutputTokens: 800,
+                    },
+                });
+
+                setChatSession(session);
+                setIsTyping(true);
+
+                // Send a hidden initial trigger so Gemini greets the user based on context
+                const result = await session.sendMessage("Hola, acabo de abrir esta tarea. ¿Me puedes saludar y ofrecer ayuda brevemente?");
+                const responseText = result.response.text();
+
+                setMessages([{ role: 'model', text: responseText, id: Date.now() }]);
+                setIsTyping(false);
+
+                // Focus input
+                setTimeout(() => inputRef.current?.focus(), 100);
+
+            } catch (error) {
+                console.error("Error iniciando chat:", error);
+                setMessages([{ role: 'model', text: 'Ups, no me pude conectar al Asistente IA. Revisa tu conexión o API Key.', id: Date.now() }]);
+                setIsTyping(false);
+            }
+        };
+
+        initChat();
+    }, [task]);
+
+    const handleSendMessage = async (e) => {
+        e.preventDefault();
+        if (!input.trim() || !chatSession || isTyping) return;
+
+        const userMessage = input.trim();
+        setInput('');
+        setMessages(prev => [...prev, { role: 'user', text: userMessage, id: Date.now() }]);
+        setIsTyping(true);
+
+        try {
+            const result = await chatSession.sendMessage(userMessage);
+            const botResponse = result.response.text();
+            setMessages(prev => [...prev, { role: 'model', text: botResponse, id: Date.now() }]);
+        } catch (error) {
+            console.error("Error enviando mensaje:", error);
+            setMessages(prev => [...prev, { role: 'model', text: 'Error al enviar el mensaje. Inténtalo de nuevo.', id: Date.now(), isError: true }]);
+        } finally {
+            setIsTyping(false);
+        }
+    };
+
+    return (
+        <div className="modal-overlay animate-enter" style={{ backdropFilter: 'blur(10px)', zIndex: 999999, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onClose}>
+
+            {/* Modal Container: Bottom Sheet on Mobile, Centered Floater on Desktop */}
+            <div
+                className="chat-modal-content"
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                    background: 'rgba(20, 20, 30, 0.85)',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    boxShadow: '0 -10px 40px rgba(0,0,0,0.5)',
+                    backdropFilter: 'blur(20px)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'hidden'
+                }}
+            >
+                {/* Mobile handle indicator */}
+                <div className="mobile-handle" style={{ background: 'rgba(255,255,255,0.3)', width: '40px', height: '4px', borderRadius: '4px', margin: '12px auto 0 auto', display: 'none' }}></div>
+
+                {/* Header */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem 1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <div style={{ background: 'rgba(255, 204, 0, 0.15)', color: '#ffcc00', padding: '0.4rem', borderRadius: '12px', display: 'flex' }}>
+                            <BulbIcon />
+                        </div>
+                        <div>
+                            <h3 style={{ color: 'white', fontSize: '1.1rem', fontWeight: 700, margin: 0 }}>Asistente IA</h3>
+                            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.8rem', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '200px' }}>{task.title}</p>
+                        </div>
+                    </div>
+
+                    <button onClick={onClose} className="close-btn" style={{ position: 'relative', top: 0, right: 0, padding: 0 }}>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+                    </button>
+                </div>
+
+                {/* Chat Area */}
+                <div className="chat-messages" style={{ flex: 1, overflowY: 'auto', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {messages.map((msg, index) => (
+                        <div key={msg.id || index} style={{ display: 'flex', flexDirection: 'column', alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+
+                            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.5rem', flexDirection: msg.role === 'user' ? 'row-reverse' : 'row', maxWidth: '85%' }}>
+                                <div style={{
+                                    width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                                    background: msg.role === 'user' ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, rgba(255,204,0,0.2), rgba(191,90,242,0.2))',
+                                    color: msg.role === 'user' ? 'rgba(255,255,255,0.8)' : '#bf5af2'
+                                }}>
+                                    {msg.role === 'user' ? <UserIcon /> : <BotIcon />}
+                                </div>
+
+                                <div style={{
+                                    padding: '0.75rem 1rem',
+                                    borderRadius: msg.role === 'user' ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
+                                    background: msg.role === 'user' ? 'linear-gradient(135deg, #5e5ce6, #bf5af2)' : 'rgba(255,255,255,0.1)',
+                                    color: msg.isError ? '#ff3b30' : 'white',
+                                    fontSize: '0.9rem',
+                                    lineHeight: 1.5,
+                                    whiteSpace: 'pre-wrap',
+                                    wordWrap: 'break-word',
+                                    boxShadow: msg.role === 'user' ? '0 4px 15px rgba(94, 92, 230, 0.3)' : 'none'
+                                }}>
+                                    {msg.text}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+
+                    {isTyping && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', alignSelf: 'flex-start', maxWidth: '85%' }}>
+                            <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'linear-gradient(135deg, rgba(255,204,0,0.2), rgba(191,90,242,0.2))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#bf5af2' }}><BotIcon /></div>
+                            <div style={{ padding: '0.75rem 1rem', borderRadius: '20px 20px 20px 4px', background: 'rgba(255,255,255,0.05)', display: 'flex', gap: '4px' }}>
+                                <span className="dot-typing"></span>
+                                <span className="dot-typing" style={{ animationDelay: '0.2s' }}></span>
+                                <span className="dot-typing" style={{ animationDelay: '0.4s' }}></span>
+                            </div>
+                        </div>
+                    )}
+                    <div ref={messagesEndRef} />
+                </div>
+
+                {/* Input Area */}
+                <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.2)' }}>
+                    <form onSubmit={handleSendMessage} style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end' }}>
+                        <textarea
+                            ref={inputRef}
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    handleSendMessage(e);
+                                }
+                            }}
+                            placeholder="Escribe tu pregunta..."
+                            rows={1}
+                            style={{
+                                flex: 1,
+                                background: 'rgba(255,255,255,0.05)',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                color: 'white',
+                                padding: '0.75rem 1rem',
+                                borderRadius: '20px',
+                                fontSize: '0.9rem',
+                                outline: 'none',
+                                resize: 'none',
+                                maxHeight: '120px',
+                                minHeight: '44px',
+                                fontFamily: 'inherit',
+                                lineHeight: 1.4
+                            }}
+                            // Auto-resize
+                            onInput={(e) => {
+                                e.target.style.height = 'auto';
+                                e.target.style.height = (e.target.scrollHeight < 120 ? e.target.scrollHeight : 120) + 'px';
+                            }}
+                        />
+                        <button
+                            type="submit"
+                            disabled={!input.trim() || isTyping}
+                            style={{
+                                background: input.trim() ? 'var(--accent-color)' : 'rgba(255,255,255,0.1)',
+                                color: 'white',
+                                width: '44px', height: '44px',
+                                borderRadius: '50%',
+                                border: 'none',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                flexShrink: 0,
+                                cursor: input.trim() ? 'pointer' : 'not-allowed',
+                                transition: 'all 0.2s',
+                                boxShadow: input.trim() ? '0 4px 15px rgba(255, 45, 85, 0.4)' : 'none'
+                            }}
+                        >
+                            <SendIcon />
+                        </button>
+                    </form>
+                </div>
+
+                <style>{`
+            .chat-modal-content {
+                width: 100%;
+                height: 100dvh;
+                border-radius: 0;
+            }
+            .chat-messages::-webkit-scrollbar {
+                width: 6px;
+            }
+            .chat-messages::-webkit-scrollbar-track {
+                background: rgba(255,255,255,0.02);
+            }
+            .chat-messages::-webkit-scrollbar-thumb {
+                background: rgba(255,255,255,0.1);
+                border-radius: 10px;
+            }
+            .dot-typing {
+                width: 6px;
+                height: 6px;
+                background-color: rgba(255,255,255,0.5);
+                border-radius: 50%;
+                animation: typingBlink 1.4s infinite ease-in-out both;
+            }
+            @keyframes typingBlink {
+                0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+                40% { opacity: 1; transform: scale(1.2); }
+            }
+            
+            @media (min-width: 768px) {
+                .chat-modal-content {
+                    width: 480px;
+                    height: 600px;
+                    max-height: 85vh;
+                    border-radius: 24px;
+                }
+                .mobile-handle { display: none !important; }
+            }
+            
+            @media (max-width: 767px) {
+                .modal-overlay {
+                    align-items: flex-end !important;
+                }
+                .chat-modal-content {
+                    height: 85dvh; /* Bottom sheet height */
+                    border-top-left-radius: 24px;
+                    border-top-right-radius: 24px;
+                    border-bottom-left-radius: 0;
+                    border-bottom-right-radius: 0;
+                    border-bottom: none;
+                    animation: slideUpBottomSheet 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+                }
+                .mobile-handle { display: block !important; }
+            }
+        `}</style>
+            </div>
+        </div>
+    );
+}
