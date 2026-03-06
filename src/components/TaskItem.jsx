@@ -287,14 +287,14 @@ export default function TaskItem({
 
               {/* Nested Subtasks Loop */}
               {task.subtasks && task.subtasks.length > 0 && (
-                <div className="subtasks-container" style={{ marginLeft: '20px', marginTop: '15px', borderLeft: '2px solid rgba(255,255,255,0.1)', paddingLeft: '15px' }}>
+                <div className="subtasks-container" style={{ marginLeft: '15px', marginTop: '15px', borderLeft: '2px solid rgba(255,255,255,0.1)', paddingLeft: '10px', minWidth: 0 }}>
                   {task.subtasks.sort((a, b) => new Date(a.created_at) - new Date(b.created_at)).map(subtask => (
-                    <div key={subtask.id} className="subtask-item" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                    <div key={subtask.id} className="subtask-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', width: '100%', minWidth: 0 }}>
                       <input
                         type="checkbox"
                         checked={subtask.completed}
                         onChange={() => onToggleSubtask(subtask.id, subtask.completed)}
-                        style={{ accentColor: 'var(--accent-color)', width: '16px', height: '16px', cursor: 'pointer' }}
+                        style={{ accentColor: 'var(--accent-color)', width: '16px', height: '16px', cursor: 'pointer', flexShrink: 0 }}
                       />
                       <textarea
                         value={subtask.title}
@@ -313,6 +313,8 @@ export default function TaskItem({
                         }}
                         style={{
                           flex: 1,
+                          minWidth: 0,
+                          width: '100%',
                           background: 'transparent',
                           border: 'none',
                           color: subtask.completed ? 'rgba(255,255,255,0.4)' : '#fff',
