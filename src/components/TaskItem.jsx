@@ -28,6 +28,7 @@ export default function TaskItem({ task, onToggle, onDelete, onEdit }) {
   const [isSwiping, setIsSwiping] = useState(false);
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [confirmDeleteInline, setConfirmDeleteInline] = useState(false);
   const [tilt, setTilt] = useState({ x: 0, y: 0 }); // 3D Tilt Effect
 
   const touchStartRef = useRef(null);
@@ -186,7 +187,7 @@ export default function TaskItem({ task, onToggle, onDelete, onEdit }) {
                 </span>
               )}
             </div>
-            {/* Priority Badge, Countdown & Edit */}
+            {/* Priority Badge, Countdown, Edit & Delete */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
               {!task.completed && (() => {
                 const countdown = getTimeRemaining(task.due_date);
@@ -209,15 +210,29 @@ export default function TaskItem({ task, onToggle, onDelete, onEdit }) {
                   {priority.charAt(0).toUpperCase() + priority.slice(1)}
                 </span>
               )}
-              {/* Pomodoro & Edit Buttons (Hover on Desktop) */}
-              <div className="hover-actions" style={{ display: 'flex', gap: '0.5rem' }}>
-                <button className="edit-btn" onClick={() => setShowPomodoro(!showPomodoro)} aria-label="Pomodoro">
-                  <TimerIcon />
-                </button>
-                <button className="edit-btn" onClick={() => onEdit(task)} aria-label="Editar tarea">
-                  <PencilIcon />
-                </button>
-              </div>
+              {/* Pomodoro, Edit & Inline Delete (Hover on Desktop) */}
+              {confirmDeleteInline ? (
+                <div style={{ display: 'flex', gap: '0.4rem', animation: 'fadeIn 0.2s ease-out' }}>
+                  <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteInline(false); }} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.3rem 0.5rem', borderRadius: '8px', color: '#fff', fontSize: '0.75rem', cursor: 'pointer', transition: 'all 0.2s' }}>
+                    ❌ Cancelar
+                  </button>
+                  <button onClick={(e) => { e.stopPropagation(); handleDelete(); }} style={{ background: 'rgba(255,59,48,0.15)', border: '1px solid rgba(255,59,48,0.4)', padding: '0.3rem 0.5rem', borderRadius: '8px', color: '#ff3b30', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 'bold', transition: 'all 0.2s', boxShadow: '0 0 10px rgba(255,59,48,0.2)' }}>
+                    ✅ Eliminar
+                  </button>
+                </div>
+              ) : (
+                <div className="hover-actions" style={{ display: 'flex', gap: '0.4rem' }}>
+                  <button className="edit-btn" onClick={(e) => { e.stopPropagation(); setShowPomodoro(!showPomodoro); }} aria-label="Pomodoro">
+                    <TimerIcon />
+                  </button>
+                  <button className="edit-btn" onClick={(e) => { e.stopPropagation(); onEdit(task); }} aria-label="Editar tarea">
+                    <PencilIcon />
+                  </button>
+                  <button className="edit-btn" onClick={(e) => { e.stopPropagation(); setConfirmDeleteInline(true); }} aria-label="Eliminar tarea" style={{ color: '#ff3b30' }}>
+                    <TrashIcon width="16" height="16" />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 

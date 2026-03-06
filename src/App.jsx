@@ -59,6 +59,7 @@ function AppContent() {
   // Day Modal State
   const [showDayModal, setShowDayModal] = useState(false);
   const [modalDate, setModalDate] = useState(null);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   // Dashboard Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -590,7 +591,7 @@ function AppContent() {
                                 ✅ Completadas ({completadas.length})
                               </h3>
                               <button
-                                onClick={() => { if (confirm('¿Vaciar todas las tareas completadas?')) clearCompleted(); }}
+                                onClick={() => setShowClearConfirm(true)}
                                 style={{
                                   display: 'flex', alignItems: 'center', gap: '0.4rem',
                                   fontSize: '0.8rem', color: '#ff3b30', fontWeight: 600,
@@ -615,6 +616,36 @@ function AppContent() {
             ) : (
               <StatCharts tasks={mappedTasks} />
             )}
+            {/* Vaciar Tareas Modal */}
+            {showClearConfirm && (
+              <div className="modal-overlay animate-enter" style={{ backdropFilter: 'blur(10px)', zIndex: 99999 }}>
+                <div className="modal-content" style={{ background: 'rgba(20, 20, 30, 0.8)', border: '1px solid rgba(255,255,255,0.2)', boxShadow: '0 0 40px rgba(255, 45, 85, 0.15)', textAlign: 'center', padding: '2.5rem', maxWidth: '400px', borderRadius: '24px' }}>
+                  <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'center' }}>
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#ffcc00" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ filter: 'drop-shadow(0 0 15px rgba(255,204,0,0.6))' }}>
+                      <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                      <line x1="12" y1="9" x2="12" y2="13" />
+                      <line x1="12" y1="17" x2="12.01" y2="17" />
+                    </svg>
+                  </div>
+                  <h2 style={{ color: 'white', marginBottom: '1rem', fontSize: '1.5rem', fontWeight: 800 }}>¿Estás completamente seguro?</h2>
+                  <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.95rem', lineHeight: '1.5', marginBottom: '2rem' }}>
+                    Esta acción es irreversible. Se eliminarán permanentemente todas tus tareas pendientes y completadas. Piénsalo dos veces.
+                  </p>
+                  <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                    <button onClick={() => setShowClearConfirm(false)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.2)', color: 'white', padding: '0.8rem 1.5rem', borderRadius: '14px', fontWeight: 600, cursor: 'pointer', flex: 1, transition: 'all 0.2s', backdropFilter: 'blur(5px)' }}>
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={() => { clearCompleted(); setShowClearConfirm(false); }}
+                      style={{ background: 'linear-gradient(135deg, #ff2d55, #bf5af2)', border: '1px solid rgba(255,45,85,0.3)', color: 'white', padding: '0.8rem 1.5rem', borderRadius: '14px', fontWeight: 700, cursor: 'pointer', flex: 1, boxShadow: '0 0 25px rgba(255,45,85,0.5)', transition: 'transform 0.2s' }}
+                    >
+                      Sí, vaciar todo
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
           </main>
 
           {/* FAB - Protagonista */}
