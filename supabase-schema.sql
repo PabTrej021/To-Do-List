@@ -63,6 +63,7 @@ CREATE TABLE IF NOT EXISTS public.subtasks (
 
 -- Habilitar Seguridad RLS para Subtareas
 ALTER TABLE public.subtasks ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Gestión total subtareas" ON public.subtasks;
 DROP POLICY IF EXISTS "Gestión total subtareas propias" ON public.subtasks;
 
 -- Esta política asegura que solo puedas tocar las subtareas de las tareas de las que eres dueño
