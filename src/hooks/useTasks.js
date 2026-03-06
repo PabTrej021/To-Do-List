@@ -19,7 +19,7 @@ export const useTasks = (session, showToast, onTaskComplete) => {
         try {
             const { data, error } = await supabase
                 .from('tasks')
-                .select('*')
+                .select('*, subtasks(*)')
                 .eq('user_id', userId)
                 .order('created_at', { ascending: false });
 
@@ -162,6 +162,65 @@ export const useTasks = (session, showToast, onTaskComplete) => {
         }
     };
 
+    // --- Subtasks CRUD ---
+    const updateSubtask = async (subtaskId, newTitle) => {
+        setTasks(prev => prev.map(t => ({
+            ...t,
+            subtasks: t.subtasks?.map(st => st.id === subtaskId ? { ...st, title: newTitle } : st)
+        })));
+        if (session) {
+            const { error } = await supabase.from('subtasks').update({ title: newTitle }).eq('id', subtaskId);
+            if (error) {
+                console.error("ERROR ACTUALIZANDO SUBTAREA:", error);
+                fetchTasks(session.user.id);
+            }
+        }
+    };
+
+    const toggleSubtask = async (subtaskId, currentCompleted) => {
+        const isCompleting = !currentCompleted;
+        if (isCompleting) playPop();
+
+        setTasks(prev => prev.map(t => ({
+            ...t,
+            subtasks: t.subtasks?.map(st => st.id === subtaskId ? { ...st, completed: isCompleting } : st)
+        })));
+        if (session) {
+            const { error } = await supabase.from('subtasks').update({ completed: isCompleting }).eq('id', subtaskId);
+            if (error) {
+                console.error("ERROR COMPLETANDO SUBTAREA:", error);
+                fetchTasks(session.user.id);
+            }
+        }
+    };
+
+    const deleteSubtask = async (subtaskId) => {
+        triggerDelete();
+        setTasks(prev => prev.map(t => ({
+            ...t,
+            subtasks: t.subtasks?.filter(st => st.id !== subtaskId)
+        })));
+        if (session) {
+            const { error } = await supabase.from('subtasks').delete().eq('id', subtaskId);
+            if (error) {
+                console.error("ERROR ELIMINANDO SUBTAREA:", error);
+                fetchTasks(session.user.id);
+            }
+        }
+    };
+
+    const saveAiNotes = async (taskId, notes) => {
+        // Optimistic UI update
+        setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ai_notes: notes } : t));
+        if (session) {
+            const { error } = await supabase.from('tasks').update({ ai_notes: notes }).eq('id', taskId);
+            if (error) {
+                console.error("ERROR GUARDANDO AI NOTES:", error);
+                fetchTasks(session.user.id);
+            }
+        }
+    };
+
     // Soft Delete (Undo)
     const deleteTask = (id) => {
         triggerDelete();
@@ -238,6 +297,10 @@ export const useTasks = (session, showToast, onTaskComplete) => {
         undoDelete,
         deletedTaskCache,
         loadEngineeringTemplates,
-        clearCompleted
+        clearCompleted,
+        toggleSubtask,
+        updateSubtask,
+        deleteSubtask,
+        saveAiNotes
     };
 };

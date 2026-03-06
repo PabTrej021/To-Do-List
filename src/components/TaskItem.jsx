@@ -11,6 +11,7 @@ const PencilIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="n
 const TimerIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>;
 const FocusIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="3" /></svg>;
 const SparklesIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" /><path d="M20 3v4" /><path d="M22 5h-4" /><path d="M4 17v2" /><path d="M5 18H3" /></svg>;
+const BulbIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18h6" /><path d="M10 22h4" /><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14" /></svg>;
 const SpinnerIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spinA 1s linear infinite' }}><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>;
 
 // Base64 short pop sound for completion - Replaced directly with Web Audio API
@@ -31,13 +32,17 @@ const getTimeRemaining = (dueDate) => {
   return { text: `${diffMins}m 🔥`, color: '#ff3b30', urgent: true };
 };
 
-export default function TaskItem({ task, onToggle, onDelete, onEdit, onFocus }) {
+export default function TaskItem({
+  task, onToggle, onDelete, onEdit, onFocus,
+  onToggleSubtask, onUpdateSubtask, onDeleteSubtask, onSaveAiNotes
+}) {
   const [isSwiping, setIsSwiping] = useState(false);
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
   const [confirmDeleteInline, setConfirmDeleteInline] = useState(false);
   const [tilt, setTilt] = useState({ x: 0, y: 0 }); // 3D Tilt Effect
   const [isThinking, setIsThinking] = useState(false);
+  const [isCoaching, setIsCoaching] = useState(false);
 
   const handleAIBreakdown = async (e) => {
     e.stopPropagation();
@@ -63,18 +68,12 @@ export default function TaskItem({ task, onToggle, onDelete, onEdit, onFocus }) 
       if (!Array.isArray(steps)) throw new Error("El formato devuelto no es un arreglo válido.");
 
       const { data: { session } } = await supabase.auth.getSession();
-      const userId = session?.user?.id;
-
-      if (!userId) throw new Error("No hay sesión activa.");
 
       for (const paso of steps) {
-        await supabase.from('tasks').insert([{
-          title: "↳ " + paso,
-          user_id: userId,
-          completed: false,
-          category: task.category,
-          priority: task.priority,
-          due_date: task.due_date
+        await supabase.from('subtasks').insert([{
+          task_id: task.id,
+          title: paso,
+          completed: false
         }]);
       }
     } catch (err) {
@@ -82,6 +81,32 @@ export default function TaskItem({ task, onToggle, onDelete, onEdit, onFocus }) 
       alert("Error al desglosar tarea: " + err.message);
     } finally {
       setIsThinking(false);
+    }
+  };
+
+  const handleAICoach = async (e) => {
+    e.stopPropagation();
+    if (isCoaching) return;
+    setIsCoaching(true);
+
+    try {
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+      if (!apiKey) throw new Error("API Key de Gemini no encontrada.");
+
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+      const prompt = `Dame 2 consejos muy breves, prácticos y motivadores para empezar esta tarea: "${task.title}". Devuélvelos sin saludos, directo al grano.`;
+
+      const result = await model.generateContent(prompt);
+      const responseText = result.response.text().trim();
+
+      if (onSaveAiNotes) onSaveAiNotes(task.id, responseText);
+    } catch (err) {
+      console.error("Error en AI Coach:", err);
+      alert("Error pidiendo consejo a la IA: " + err.message);
+    } finally {
+      setIsCoaching(false);
     }
   };
 
@@ -249,6 +274,45 @@ export default function TaskItem({ task, onToggle, onDelete, onEdit, onFocus }) 
                   {task.description}
                 </p>
               )}
+
+              {/* AI Coaching Box */}
+              {task.ai_notes && (
+                <div style={{ marginTop: '0.5rem', marginBottom: '0.5rem', padding: '0.75rem', borderRadius: '12px', backgroundColor: 'rgba(191,90,242,0.1)', border: '1px solid rgba(191,90,242,0.3)', color: 'rgba(255,255,255,0.9)', fontSize: '0.85rem', lineHeight: 1.5, animation: 'fadeIn 0.5s ease-out' }}>
+                  <div style={{ color: '#bf5af2', fontWeight: 'bold', marginBottom: '0.3rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                    <BulbIcon /> Consejo AI
+                  </div>
+                  <div style={{ whiteSpace: 'pre-wrap' }}>{task.ai_notes}</div>
+                </div>
+              )}
+
+              {/* Nested Subtasks Loop */}
+              {task.subtasks?.length > 0 && (
+                <div style={{ marginTop: '0.8rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '100%' }}>
+                  {task.subtasks.sort((a, b) => new Date(a.created_at) - new Date(b.created_at)).map(sub => (
+                    <div key={sub.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(0,0,0,0.2)', padding: '0.4rem 0.6rem', borderRadius: '8px', opacity: sub.completed ? 0.6 : 1, transition: 'all 0.2s' }}>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onToggleSubtask(sub.id, sub.completed); }}
+                        style={{ flexShrink: 0, width: '20px', height: '20px', borderRadius: '4px', border: `2px solid ${sub.completed ? 'var(--success-color)' : 'rgba(255,255,255,0.4)'}`, background: sub.completed ? 'var(--success-color)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s' }}
+                      >
+                        {sub.completed && <CheckIcon width="12" height="12" />}
+                      </button>
+                      <input
+                        type="text"
+                        value={sub.title}
+                        onChange={(e) => onUpdateSubtask(sub.id, e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ flex: 1, background: 'transparent', border: 'none', color: 'white', fontSize: '0.85rem', textDecoration: sub.completed ? 'line-through' : 'none', outline: 'none' }}
+                      />
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onDeleteSubtask(sub.id); }}
+                        style={{ background: 'transparent', border: 'none', color: 'rgba(255,59,48,0.7)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.2rem' }}
+                      >
+                        <TrashIcon width="14" height="14" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
               {task.due_date && (
                 <span className="task-date-badge" style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', gap: '5px', marginTop: '6px' }}>
                   📅 {new Date(task.due_date).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })}
@@ -291,9 +355,14 @@ export default function TaskItem({ task, onToggle, onDelete, onEdit, onFocus }) 
               ) : (
                 <div className="hover-actions" style={{ display: 'flex', gap: '0.4rem' }}>
                   {!task.completed && (
-                    <button className="edit-btn" onClick={handleAIBreakdown} aria-label="Desglose Inteligente" style={{ color: '#bf5af2', borderColor: 'rgba(191, 90, 242, 0.3)' }}>
-                      {isThinking ? <SpinnerIcon /> : <SparklesIcon />}
-                    </button>
+                    <>
+                      <button className="edit-btn" onClick={handleAICoach} aria-label="Pedir Consejo AI" style={{ color: '#ffcc00', borderColor: 'rgba(255, 204, 0, 0.3)' }}>
+                        {isCoaching ? <SpinnerIcon /> : <BulbIcon />}
+                      </button>
+                      <button className="edit-btn" onClick={handleAIBreakdown} aria-label="Desglose Inteligente" style={{ color: '#bf5af2', borderColor: 'rgba(191, 90, 242, 0.3)' }}>
+                        {isThinking ? <SpinnerIcon /> : <SparklesIcon />}
+                      </button>
+                    </>
                   )}
                   {onFocus && (
                     <button className="edit-btn" onClick={(e) => { e.stopPropagation(); onFocus(task); }} aria-label="Modo Enfoque">
